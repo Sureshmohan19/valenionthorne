@@ -1,0 +1,187 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --pastel-green: #7dd3a0;
+    --pastel-light-orange: #FFDAB9;
+}
+
+body {
+    font-family: 'Geist', sans-serif;
+    line-height: 1.7;
+    color: #333;
+    background-color: #fff;
+    position: relative;
+}
+
+.ruler {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 50px;
+    height: 100vh;
+    background: none;
+    z-index: 1;
+}
+
+.ruler-marks {
+    position: relative;
+    height: 100%;
+}
+
+.ruler-marks::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: 
+        repeating-linear-gradient(
+            0deg,
+            transparent 0px,
+            transparent 48px,
+            #FFDAB9 48px,
+            #FFDAB9 50px
+        ),
+        repeating-linear-gradient(
+            0deg,
+            transparent 0px,
+            transparent 9px,
+            var(--pastel-green) 9px,
+            var(--pastel-green) 10px
+        );
+}
+
+.ruler-marks::after {
+    content: '';
+    position: absolute;
+    top: 20px;
+    right: 5px;
+    font-size: 8px;
+    color: #6c757d;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+}
+
+.blog-post {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 3rem 2rem;
+    margin-left: 80px;
+    position: relative;
+    z-index: 2;
+}
+
+.post-header {
+    margin-bottom: 1.5rem;
+}
+
+.back-link {
+    display: inline-block;
+    color: #64748b;
+    text-decoration: none;
+    font-size: 0.9rem;
+    margin-bottom: 2rem;
+    transition: color 0.2s ease;
+}
+
+.back-link:hover {
+    color: var(--pastel-green);
+}
+
+.post-header h1 {
+    font-size: 2.5rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 0.5rem;
+    line-height: 1.2;
+    font-family: 'Geist', sans-serif;
+}
+
+.post-date {
+    font-family: 'Geist', sans-serif;
+    font-size: 1.1rem;
+    color: #64748b;
+    opacity: 0.7;
+}
+
+.post-content {
+    font-family: 'Geist', sans-serif;
+    font-size: 1.1rem;
+    line-height: 1.8;
+}
+
+.post-content p {
+    margin-bottom: 1.0rem;
+}
+
+.post-content h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin: 2.0rem 0 1rem 0;
+}
+
+.post-content h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin: 1.5rem 0 1rem 0;
+}
+
+.post-content ul,
+.post-content ol {
+    margin: 1.0rem 0;
+    padding-left: 2rem;
+}
+
+.post-content li {
+    margin-bottom: 0.5rem;
+}
+
+.post-content blockquote {
+    border-left: 4px solid var(--pastel-green);
+    padding-left: 1.0rem;
+    margin: 1.5rem 0;
+    font-style: italic;
+    color: #64748b;
+}
+
+.post-content code {
+    background-color: #f1f5f9;
+    padding: 0.1rem 0.2rem;
+    border-radius: 4px;
+    font-size: 0.9em;
+    font-family: 'SF Mono', Monaco, monospace;
+}
+
+.post-content pre {
+    background-color: #f8fafc;
+    padding: 1.0rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 1.5rem 0;
+}
+
+.post-content pre code {
+    background: none;
+    padding: 0;
+}
+
+@media (max-width: 768px) {
+    .blog-post {
+        padding: 2rem 1rem;
+    }
+    
+    .post-header h1 {
+        font-size: 2rem;
+    }
+    
+    .post-content {
+        font-size: 1rem;
+    }
+}

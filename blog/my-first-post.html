@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My First Blog Post - Valenion Thorne</title>
+    <meta name="description" content="My first blog post on my personal website">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU07RLA8HuBLeUW9dqmXvrpG8AC2ECZUX7KOCLVEAFixCasYGGAR3pB" crossorigin="anonymous">
+    <link rel="stylesheet" href="../blog-style.css">
+</head>
+<body>
+    <div class="ruler">
+        <div class="ruler-marks"></div>
+    </div>
+    <article class="blog-post">
+        <header class="post-header">
+            <a href="../index.html" class="back-link">← Back to home</a>
+            <h1>My First Blog Post</h1>
+            <p class="post-date">January 29, 2025</p>
+        </header>
+        
+        <div class="post-content">
+            <p>Welcome to my first blog post! This is where I'll share my thoughts, experiences, and insights about various topics that interest me.</p>
+            
+            <p>I've decided to keep things simple with this blog - no fancy frameworks, just clean HTML, CSS, and the beautiful Geist font. Sometimes the best solutions are the simplest ones.</p>
+            
+            <h2>Why Simple?</h2>
+            <p>In a world of complex build processes and heavy JavaScript frameworks, there's something refreshing about going back to basics. This approach offers:</p>
+            
+            <ul>
+                <li>Lightning-fast loading times</li>
+                <li>Better accessibility</li>
+                <li>Easier maintenance</li>
+                <li>Lower hosting costs</li>
+            </ul>
+            
+            <p>Looking forward to sharing more thoughts here in the future!</p>
+        </div>
+    </article>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            renderMathInElement(document.body, {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '$', right: '$', display: false},
+                    {left: '\\(', right: '\\)', display: false},
+                    {left: '\\[', right: '\\]', display: true}
+                ],
+                throwOnError : false
+            });
+        });
+    </script>
+</body>
+</html>
