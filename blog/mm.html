@@ -416,6 +416,794 @@
             </p>
 
             <h2>2. Loop ordering (ijk vs ikj vs kij)</h2>
+            <p>
+                We just computed matrix multiplication using the <strong>ijk</strong> order — the most intuitive way where we compute each element of C completely before moving to the next.
+                But here's something interesting: we can change the order of these three nested loops and still get the exact same result!
+            </p>
+            <p>
+                The three loops are:
+            </p>
+            <ul>
+                <li><strong>i loop</strong>: iterates through rows of A (and rows of C)</li>
+                <li><strong>j loop</strong>: iterates through columns of B (and columns of C)</li>
+                <li><strong>k loop</strong>: the summation index that runs along A's columns and B's rows</li>
+            </ul>
+            <p>
+                By changing which loop is outermost, middle, and innermost, we change <em>how</em> we accumulate the result. 
+                While all orderings compute the same answer mathematically, they access memory in different patterns. 
+            </p>
+            <p>Let's look at two alternative orderings: <strong>ikj</strong> and <strong>kij</strong>.</p>
+
+            <h3>ikj Ordering</h3>
+            <p>
+                In <strong>ikj</strong> ordering, we fix a row of A (i), then for each element in that row (k), 
+                we update an entire row of C by multiplying that single element with the corresponding row of B.
+            </p>
+            <p>The formula is the same, but we accumulate differently:</p>
+            <div class="math">
+                C[i][j] += A[i][k] · B[k][j]
+            </div>
+            <p>
+                <strong>Formula explanation:</strong> Instead of completing one C[i][j] at a time, we process C row by row. 
+                For each A[i][k], we multiply it with the entire k-th row of B and add the results to row i of C. 
+                This means we're building up each row of C gradually across all k values.
+            </p>
+
+            <h4>Step-by-Step Calculation (ikj)</h4>
+            <p>
+                Let's compute the same matrices A and B, but now using ikj ordering. 
+                We'll initialize C to all zeros first.
+            </p>
+
+            <div style="border: 2px solid #8b7355; padding: 20px; background-color: #f5f5f0; margin: 20px 0; border-radius: 8px;">
+                <p><strong>i=0, k=0:</strong> Take A[0][0]=1, multiply with entire row B[0]</p>
+                <p>
+                    C[0][0] += 1×16 = 16<br>
+                    C[0][1] += 1×15 = 15<br>
+                    C[0][2] += 1×14 = 14<br>
+                    C[0][3] += 1×13 = 13
+                </p>
+                <p style="margin-top: 10px;">
+                    <em>Row 0 of C so far: [16, 15, 14, 13]</em>
+                </p>
+
+                <p><strong>i=0, k=1:</strong> Take A[0][1]=2, multiply with entire row B[1]</p>
+                <p>
+                    C[0][0] += 2×12 = 16+24 = 40<br>
+                    C[0][1] += 2×11 = 15+22 = 37<br>
+                    C[0][2] += 2×10 = 14+20 = 34<br>
+                    C[0][3] += 2×9 = 13+18 = 31
+                </p>
+                <p style="margin-top: 10px;">
+                    <em>Row 0 of C so far: [40, 37, 34, 31]</em>
+                </p>
+
+                <p><strong>i=0, k=2:</strong> Take A[0][2]=3, multiply with entire row B[2]</p>
+                <p>
+                    C[0][0] += 3×8 = 40+24 = 64<br>
+                    C[0][1] += 3×7 = 37+21 = 58<br>
+                    C[0][2] += 3×6 = 34+18 = 52<br>
+                    C[0][3] += 3×5 = 31+15 = 46
+                </p>
+                <p style="margin-top: 10px;">
+                    <em>Row 0 of C so far: [64, 58, 52, 46]</em>
+                </p>
+
+                <p><strong>i=0, k=3:</strong> Take A[0][3]=4, multiply with entire row B[3]</p>
+                <p>
+                    C[0][0] += 4×4 = 64+16 = <strong>80</strong><br>
+                    C[0][1] += 4×3 = 58+12 = <strong>70</strong><br>
+                    C[0][2] += 4×2 = 52+8 = <strong>60</strong><br>
+                    C[0][3] += 4×1 = 46+4 = <strong>50</strong>
+                </p>
+                <p style="margin-top: 10px;">
+                    <em><strong>Row 0 of C complete: [80, 70, 60, 50]</strong></em>
+                </p>
+
+                <p style="margin-top: 20px;">
+                    <strong>Continuing for i=1, i=2, i=3...</strong> 
+                    (following the same pattern for each row)
+                </p>
+
+                <p style="margin-top: 10px;">
+                    After processing all rows with ikj ordering, we get:
+                </p>
+                <p>
+                    Row 0: [80, 70, 60, 50]<br>
+                    Row 1: [240, 214, 188, 162]<br>
+                    Row 2: [400, 358, 316, 274]<br>
+                    Row 3: [560, 502, 444, 386]</p>
+            </div>
+            <p><strong>Same result!</strong> The final matrix C is identical to what we got with ijk ordering.</p>
+
+            <h4>Metrics for ikj</h4>
+            <p>
+                <strong>Number of Operations:</strong> Same as ijk — <strong>64 multiplications, 48 additions, 112 total operations</strong>. 
+                The number of operations doesn't change; only the order changes.
+            </p>
+            <p>
+                <strong>Memory Access Pattern:</strong> The key difference is how we access B. 
+                In ikj, we access B[k][j] where k is fixed and j varies — this means we're reading entire <em>rows</em> of B sequentially. 
+                This is better for cache because consecutive elements are loaded together in cache lines.
+            </p>
+            <p>
+                <strong>Cache Behavior:</strong> For small 4×4 matrices, there's no practical difference. 
+                But for 512×512 matrices, ikj is about 2× faster than ijk because it accesses B row-wise instead of column-wise, 
+                resulting in fewer cache misses.
+            </p>
+
+            <h3>kij Ordering</h3>
+            <p>Now, let's take a look at the last method.</p>
+            <p>
+                In <strong>kij</strong> ordering, we fix a value of k (which corresponds to one column of A and one row of B), 
+                then for each row i of A, we take A[i][k] and multiply it with the entire k-th row of B, 
+                adding the results to the corresponding row of C. 
+                This is like computing the result as a sum of "outer products" — 
+                each iteration of k contributes one layer to building up the entire matrix C.
+            </p>
+            <p>The formula remains the same:</p>
+            <div class="math">
+                C[i][j] += A[i][k] · B[k][j]
+            </div>
+            <p>
+                <strong>Formula explanation:</strong> Instead of working row by row (ikj) or element by element (ijk), 
+                we process k first. For each k value, we take the entire k-th column of A and k-th row of B, 
+                and perform an outer product-like operation that updates all of C at once. 
+                We build up C gradually by summing contributions from each k.
+            </p>
+
+            <h4>Step-by-Step Calculation (kij)</h4>
+            <p>
+                Let's compute the same matrices A and B using kij ordering. 
+                Again, we start with C initialized to all zeros.
+            </p>
+
+            <div style="border: 2px solid #8b7355; padding: 20px; background-color: #f5f5f0; margin: 20px 0; border-radius: 8px;">
+                <p><strong>k=0:</strong> Use column A[:,0] = [1, 5, 9, 13] and row B[0,:] = [16, 15, 14, 13]</p>
+                <p>
+                    C[0][0] += 1×16 = 16,  C[0][1] += 1×15 = 15,  C[0][2] += 1×14 = 14,  C[0][3] += 1×13 = 13<br><br>
+                    C[1][0] += 5×16 = 80,  C[1][1] += 5×15 = 75,  C[1][2] += 5×14 = 70,  C[1][3] += 5×13 = 65<br><br>
+                    C[2][0] += 9×16 = 144, C[2][1] += 9×15 = 135, C[2][2] += 9×14 = 126, C[2][3] += 9×13 = 117<br><br>
+                    C[3][0] += 13×16 = 208, C[3][1] += 13×15 = 195, C[3][2] += 13×14 = 182, C[3][3] += 13×13 = 169
+                </p>
+                <p style="margin-top: 10px;">
+                    <i>Now k=0 is done. So, C after k=0:</i><br>
+                        [[16, 15, 14, 13], <br>
+                        [80, 75, 70, 65], <br>
+                        [144, 135, 126, 117],<br>
+                        [208, 195, 182, 169]]
+                </p>
+                <hr><br>
+
+                <p><strong>k=1:</strong> Use column A[:,1] = [2, 6, 10, 14] and row B[1,:] = [12, 11, 10, 9]</p>
+                <p>
+                    C[0][0] += 2×12 = 16+24 = 40,  C[0][1] += 2×11 = 15+22 = 37,  C[0][2] += 2×10 = 14+20 = 34,  C[0][3] += 2×9 = 13+18 = 31<br><br>
+                    C[1][0] += 6×12 = 80+72 = 152, C[1][1] += 6×11 = 75+66 = 141, C[1][2] += 6×10 = 70+60 = 130, C[1][3] += 6×9 = 65+54 = 119<br><br>
+                    C[2][0] += 10×12 = 144+120 = 264, C[2][1] += 10×11 = 135+110 = 245, C[2][2] += 10×10 = 126+100 = 226, C[2][3] += 10×9 = 117+90 = 207<br><br>
+                    C[3][0] += 14×12 = 208+168 = 376, C[3][1] += 14×11 = 195+154 = 349, C[3][2] += 14×10 = 182+140 = 322, C[3][3] += 14×9 = 169+126 = 295
+                </p>
+                <p style="margin-top: 10px;">
+                    <i>Now k=1 is done. So C after k=1:</i><br> 
+                    [[40, 37, 34, 31],<br>
+                    [152, 141, 130, 119],<br>
+                    [264, 245, 226, 207],<br>
+                    [376, 349, 322, 295]]
+                </p>
+                <hr><br>
+
+                <p><strong>k=2:</strong> Use column A[:,2] = [3, 7, 11, 15] and row B[2,:] = [8, 7, 6, 5]</p>
+                <p>
+                    C[0][0] += 3×8 = 40+24 = 64,   C[0][1] += 3×7 = 37+21 = 58,   C[0][2] += 3×6 = 34+18 = 52,   C[0][3] += 3×5 = 31+15 = 46<br><br>
+                    C[1][0] += 7×8 = 152+56 = 208, C[1][1] += 7×7 = 141+49 = 190, C[1][2] += 7×6 = 130+42 = 172, C[1][3] += 7×5 = 119+35 = 154<br><br>
+                    C[2][0] += 11×8 = 264+88 = 352, C[2][1] += 11×7 = 245+77 = 322, C[2][2] += 11×6 = 226+66 = 292, C[2][3] += 11×5 = 207+55 = 262<br><br>
+                    C[3][0] += 15×8 = 376+120 = 496, C[3][1] += 15×7 = 349+105 = 454, C[3][2] += 15×6 = 322+90 = 412, C[3][3] += 15×5 = 295+75 = 370
+                </p>
+                <p style="margin-top: 10px;">
+                    <i>Now, k=2 is done, So C after k=2:</i><br>
+                        [[64, 58, 52, 46],<br>
+                        [208, 190, 172, 154],<br>
+                        [352, 322, 292, 262],<br>
+                        [496, 454, 412, 370]]
+                </p>
+                <hr><br>
+
+                <p><strong>k=3:</strong> Use column A[:,3] = [4, 8, 12, 16] and row B[3,:] = [4, 3, 2, 1]</p>
+                <p>
+                    C[0][0] += 4×4 = 64+16 = <strong>80</strong>,   C[0][1] += 4×3 = 58+12 = <strong>70</strong>,   C[0][2] += 4×2 = 52+8 = <strong>60</strong>,   C[0][3] += 4×1 = 46+4 = <strong>50</strong><br><br>
+                    C[1][0] += 8×4 = 208+32 = <strong>240</strong>, C[1][1] += 8×3 = 190+24 = <strong>214</strong>, C[1][2] += 8×2 = 172+16 = <strong>188</strong>, C[1][3] += 8×1 = 154+8 = <strong>162</strong><br>><br>
+                    C[2][0] += 12×4 = 352+48 = <strong>400</strong>, C[2][1] += 12×3 = 322+36 = <strong>358</strong>, C[2][2] += 12×2 = 292+24 = <strong>316</strong>, C[2][3] += 12×1 = 262+12 = <strong>274</strong><br><br>
+                    C[3][0] += 16×4 = 496+64 = <strong>560</strong>, C[3][1] += 16×3 = 454+48 = <strong>502</strong>, C[3][2] += 16×2 = 412+32 = <strong>444</strong>, C[3][3] += 16×1 = 370+16 = <strong>386</strong>
+                </p>
+                <p style="margin-top: 10px;">
+                    <i><strong>Final C:</strong><i> <br>
+                        <strong>[[80, 70, 60, 50],<br>
+                            [240, 214, 188, 162],<br>
+                            [400, 358, 316, 274],<br>
+                            [560, 502, 444, 386]]</strong>
+                </p>
+            </div>
+            <p><strong>Same result again!</strong> All three loop orderings (ijk, ikj, kij) produce the identical matrix C.</p>
+            <p>
+                I showed the full kij calculation step-by-step because this ordering might feel the most different from how we naturally think about matrix multiplication. 
+                While ijk goes element-by-element and ikj goes row-by-row, kij builds up the entire result matrix layer-by-layer through outer products. 
+                <br><br>It looks complex at first, but it's really just reorganizing the same 112 multiplications and additions — we're doing the exact same arithmetic, 
+                just in a different sequence. Once you see it fully worked out, the pattern becomes clear: for each k, 
+                we're adding one "contribution" from A's k-th column and B's k-th row to the entire result matrix.
+            </p>
+
+            <h4>Metrics for kij</h4>
+            <p>
+                <strong>Number of Operations:</strong> Still <strong>64 multiplications, 48 additions, 112 total operations.</strong>
+                The computational work is identical across all loop orderings.
+            </p>
+            <p>
+                <strong>Memory Access Pattern:</strong> In kij, both A[i][k] and B[k][j] have good access patterns. 
+                For each fixed k, we access column k of A (which jumps by rows, but we do it for all i's together), 
+                and we access row k of B repeatedly (sequential access). 
+                The C matrix gets updated in a row-wise manner for each i, which is also cache-friendly.
+            </p>
+            <p>
+                <strong>Cache Behavior:</strong> Like ikj, kij has good cache performance for large matrices. 
+                For 512×512 matrices, kij performs similarly to ikj (about 2× faster than ijk) because it avoids 
+                the column-wise traversal of B that makes ijk slow. The outer product style of computation 
+                updates the entire matrix C in a cache-friendly way.
+            </p>
+
+            <h2>3. Here Comes the Catch - The Cache in MatMul</h2>
+            <p><i><strong>Important:</strong> I hope readers have a basic understanding of CPU caches. 
+                If not, feel free to check out my post about <a href="/blog/cpuanditscache.html">CPU caches</a>. 
+                It's not mandatory, though — I will try to explain things from the ground up.</i>
+            </p>
+            <p>CPUs execute instructions using ALUs and FPUs, which constantly need data to work on. 
+                While the main memory can provide it, accessing it directly is slow. 
+                This is where the <strong><a href="/blog/cpuanditscache.html">CPU cache</a></strong> comes in — a small, fast memory located close to the CPU that reduces access time. 
+                Cache is much smaller than main memory, with L1 being the fastest and tiniest. For matrix multiplication, where matrices can be large, keeping cache in mind is crucial for writing efficient code.
+            </p>
+
+            <h3>How Matrices are Stored in Memory</h3>
+            <p>Just take our matrix A as an example (rewritten here for convenience):</p>
+            <div style="display:flex; gap:48px; align-items:flex-start; justify-content:center;">
+                <div>
+                    <div class="matrix">
+                    <div class="matrix-row"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+                    <div class="matrix-row"><span>5</span><span>6</span><span>7</span><span>8</span></div>
+                    <div class="matrix-row"><span>9</span><span>10</span><span>11</span><span>12</span></div>
+                    <div class="matrix-row"><span>13</span><span>14</span><span>15</span><span>16</span></div>
+                    </div>
+                    <div style="text-align:center; font-weight:500; font-family: monospace; color: brown;">Matrix A</div>
+                </div>
+            </div>
+            <br>
+
+            <p>What do you see here? 
+                A 4×4 grid of numbers, arranged neatly in rows and columns.
+                But computers cannot store it exactly like this. 
+                Instead, they store the numbers in <strong>continuous memory</strong>. 
+                Now you might ask: in what order? This is where <strong>row-major</strong> and <strong>column-major</strong> storage comes into play.
+            </p>
+            <h4>Row-Major vs Column-Major Memory Layout</h4>
+            <p>Row-major and column-major order are two distinct methods for storing multi-dimensional arrays, like matrices, in computer memory, which is linear.</p>
+            <p>In row-major order, elements within the same row are stored contiguously in memory. 
+                This means that after storing all elements of the first row, the elements of the next row follow directly.
+            </p>
+            <div style="display:flex; gap:48px; justify-content:center; flex-wrap:wrap; margin-bottom:24px;">
+                <!-- Row-Major -->
+                <div>
+                    <div class="matrix">
+                        <span>1</span> <span>2</span> <span>3</span> <span>4</span> <span>5</span> <span>6</span> <span>7</span> <span>8</span> <span>9</span> <span>10</span> <span>11</span> <span>12</span> <span>13</span> <span>14</span> <span>15</span> <span>16</span>
+                    </div>
+                    <div style="text-align:center; font-weight:500; font-family: monospace; color: brown;">Row-major: The numbers are stored row by row,<br>left to right, top to bottom</div>
+                </div>
+            </div>
+            <p>Conversely, in column-major order, elements within the same column are stored contiguously. 
+                So, all elements of the first column are stored sequentially, followed by the elements of the second column, and so on.
+            <div style="display:flex; gap:48px; justify-content:center; flex-wrap:wrap; margin-bottom:24px;">
+                <!-- Column-Major -->
+                <div>
+                    <div class="matrix">
+                        <span>1</span> <span>5</span> <span>9</span> <span>13</span> <span>2</span> <span>6</span> <span>10</span> <span>14</span> <span>3</span> <span>7</span> <span>11</span> <span>15</span> <span>4</span> <span>8</span> <span>12</span> <span>16</span>
+                    </div> 
+                    <div style="text-align:center; font-weight:500; font-family: monospace; color: brown;">Column-Major: The numbers are stored column by column,<br>top to bottom, left to right</div>
+                </div>
+            </div>
+
+            <h2>4. MatMul Performance Benchmarking in C</h2>
+            <p><i>I’m sorry, everyone! I know most of you love Python for ML/AI, but Python alone can’t clearly show the performance effects we want to demonstrate. 
+                Don’t worry — we’ll come back to <strong>Python</strong> and <strong>NumPy</strong> later when we explore OpenBLAS and kernel-level optimizations.</i></p>
+            
+            <p>In this section, we'll benchmark three different loop orderings for matrix multiplication to understand how <strong>memory access patterns</strong> affect performance. 
+                All three implementations compute the exact same result <code>C = A × B</code> — but they access memory in different orders. 
+                The differences in performance will reveal how critical cache locality is for computational efficiency.</p>
+            <p>We're using <strong>C</strong> for these benchmarks because it gives us direct control over memory access patterns and allows us to see the raw performance differences without layers of abstraction. 
+                Each implementation will multiply two 512×512 matrices, performing over 268 million floating-point operations. 
+                <br><br>The key insight: <strong>it's not just what you compute, but how you access memory while computing it</strong>.</p>
+            
+            <!-- C Code Snippets for Different Loop Orderings -->
+            <h3>The ijk Ordering (Naive Approach)</h3>
+            <p>This is the most intuitive implementation — it directly follows the mathematical definition of matrix multiplication. 
+                For each element C[i][j], we sum the products A[i][k] × B[k][j] across all k. 
+                However, this ordering has poor cache performance because B[k][j] accesses column elements of B, which are far apart in memory due to row-major storage.</p>
+            <pre><code>
+#define N 512
+
+void matmul_ijk(double A[N][N], double B[N][N], double C[N][N]) {
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            C[i][j] = 0.0;
+            for (int k = 0; k < N; k++) {
+                C[i][j] += A[i][k] * B[k][j];
+            }
+        }
+    }
+}
+            </code></pre>
+            <h3>The ikj Ordering (Cache-Friendly)</h3>
+            <p>By swapping the j and k loops, we improve cache locality for matrix B. 
+                Now the innermost loop traverses B[k][j] across consecutive columns (row-wise in memory), while A[i][k] is reused across multiple iterations. 
+                This change alone can yield significant speedups by reducing cache misses.</p>
+            <pre><code>
+#define N 512
+
+void matmul_ikj(double A[N][N], double B[N][N], double C[N][N]) {
+    for (int i = 0; i < N; i++) {
+        for (int k = 0; k < N; k++) {
+            for (int j = 0; j < N; j++) {
+                C[i][j] += A[i][k] * B[k][j];
+            }
+        }
+    }
+}
+            </code></pre>
+            <h3>The kij Ordering (Alternative Optimization)</h3>
+            <p>This ordering computes the result by accumulating outer products — for each k, we add the contribution A[i][k] × B[k][j] to all elements. 
+                While less intuitive, this ordering also provides good cache behavior by maintaining spatial locality in how we access both input matrices and write to the output matrix C.</p>
+            <pre><code>
+#define N 512 
+
+void matmul_kij(double A[N][N], double B[N][N], double C[N][N]) {
+    for (int k = 0; k < N; k++) {
+        for (int i = 0; i < N; i++) {
+            for (int j = 0; j < N; j++) {
+                C[i][j] += A[i][k] * B[k][j];
+            }
+        }
+    }
+}
+            </code></pre>
+            <h3>Matrix Initialization and Helper Functions</h3>
+            <p>Before we can benchmark our multiplication algorithms, we need utility functions to initialize matrices with random values, zero them out for each test run, and verify that different loop orderings produce identical results (within floating-point precision).</p>
+            <pre><code>
+// Initialize matrix with random values between 0 and 10
+void init_matrix(double M[N][N]) {
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            M[i][j] = (double)rand() / RAND_MAX * 10.0;
+        }
+    }
+}
+
+// Initialize matrix to zero (important for accumulation operations)
+void zero_matrix(double M[N][N]) {
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            M[i][j] = 0.0;
+        }
+    }
+}
+
+// Verify two matrices are equal within epsilon tolerance
+int matrices_equal(double M1[N][N], double M2[N][N], double epsilon) {
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            if (fabs(M1[i][j] - M2[i][j]) > epsilon) {
+                return 0;
+            }
+        }
+    }
+    return 1;
+}
+            </code></pre>
+            <h3>The Benchmarking Framework</h3>
+            <p>Our main function orchestrates the entire benchmark: allocating five matrices (A, B, and three output matrices for each ordering), initializing them, running each multiplication variant, measuring execution time, and verifying correctness. 
+                We use heap allocation rather than stack allocation to avoid stack overflow with large matrices, and we measure performance in GFLOPS (billions of floating-point operations per second) to standardize our results.</p>
+            <pre><code>
+// Count total floating-point operations for matrix multiplication
+long long count_operations(int n) {
+    long long muls = (long long)n * n * n;      // N³ multiplications
+    long long adds = (long long)n * n * (n - 1); // N²(N-1) additions
+    return muls + adds;
+}
+int main() {
+    // Allocate matrices on heap (stack might overflow for large N)
+    double (*A)[N] = malloc(N * N * sizeof(double));
+    double (*B)[N] = malloc(N * N * sizeof(double));
+    double (*C_ijk)[N] = malloc(N * N * sizeof(double));
+    double (*C_ikj)[N] = malloc(N * N * sizeof(double));
+    double (*C_kij)[N] = malloc(N * N * sizeof(double));
+    
+    if (!A || !B || !C_ijk || !C_ikj || !C_kij) {
+        printf("Memory allocation failed!\n");
+        return 1;
+    }
+    
+    srand(42);  // Fixed seed for reproducibility
+    
+    printf("Matrix Multiplication Performance Comparison\n");
+    printf("Matrix size: %d x %d\n", N, N);
+    printf("Total operations: %lld\n", count_operations(N));
+    printf("Memory per matrix: %.2f MB\n", (N * N * sizeof(double)) / (1024.0 * 1024.0));
+    
+    // Initialize matrices
+    init_matrix(A);
+    init_matrix(B);
+    
+    // Benchmark each ordering
+    // Test 1: ijk ordering
+    zero_matrix(C_ijk);
+    clock_t start = clock();
+    matmul_ijk(A, B, C_ijk);
+    clock_t end = clock();
+    double time_ijk = ((double)(end - start)) / CLOCKS_PER_SEC;
+    double gflops_ijk = (count_operations(N) / 1e9) / time_ijk;
+    
+    // Test 2: ikj ordering
+    zero_matrix(C_ikj);
+    start = clock();
+    matmul_ikj(A, B, C_ikj);
+    end = clock();
+    double time_ikj = ((double)(end - start)) / CLOCKS_PER_SEC;
+    double gflops_ikj = (count_operations(N) / 1e9) / time_ikj;
+    
+    // Test 3: kij ordering
+    zero_matrix(C_kij);
+    start = clock();
+    matmul_kij(A, B, C_kij);
+    end = clock();
+    double time_kij = ((double)(end - start)) / CLOCKS_PER_SEC;
+    double gflops_kij = (count_operations(N) / 1e9) / time_kij;
+    
+    // Verify correctness
+    printf("\n--- Correctness Check ---\n");
+    printf("ikj matches ijk: %s\n", matrices_equal(C_ijk, C_ikj, 1e-6) ? "YES ✓" : "NO ✗");
+    printf("kij matches ijk: %s\n", matrices_equal(C_ijk, C_kij, 1e-6) ? "YES ✓" : "NO ✗");
+    
+    // Cleanup
+    free(A);
+    free(B);
+    free(C_ijk);
+    free(C_ikj);
+    free(C_kij);
+    
+    return 0;
+}
+            </code></pre>
+            <p>With a solid understanding of matrix multiplication, cache hierarchies, and memory access patterns behind us, it's time to move from theory to practice. 
+                Let's compile our code, run the benchmarks, and see how different loop orderings perform in reality.</p>
+            <h3>5. Benchmark Results: The Numbers Speak for Themselves</h3>
+            <pre><code>
+Matrix Multiplication Performance Comparison
+=============================================
+Matrix size: 512 x 512
+Total operations: 268173312
+Memory per matrix: 2.00 MB
+Total memory: 10.00 MB
+
+Initializing matrices...
+
+---- Testing ijk ordering ----
+Time: 0.7866 seconds
+Performance: 0.34 GFLOPS
+
+---- Testing ikj ordering ----
+Time: 0.3420 seconds
+Performance: 0.78 GFLOPS
+Speedup vs ijk: 2.30x
+
+---- Testing kij ordering ----
+Time: 0.3613 seconds
+Performance: 0.74 GFLOPS
+Speedup vs ijk: 2.18x
+
+---- Correctness Check ----
+ikj matches ijk: YES ✓
+kij matches ijk: YES ✓
+
+=== Performance Summary ===
+Ordering    Time(s)    GFLOPS    Speedup
+ijk         0.7866     0.34      1.00x
+ikj         0.3420     0.78      2.30x
+kij         0.3613     0.74      2.18x
+=============================================
+            </code></pre>
+            <p>The results are dramatic and exactly what we predicted. 
+                Simply by reordering our loops — without changing a single calculation — we achieved a <strong>2.3x speedup</strong> with the ikj ordering and a <strong>2.18x speedup</strong> with kij ordering compared to the naive ijk approach. 
+                Both optimized versions compute the exact same result (verified by our correctness check), yet they run in less than half the time.
+            </p>
+            <p><strong>Let's break down what happened</strong>: 
+                The ijk ordering took 0.79 seconds and achieved only 0.34 GFLOPS, spending most of its time waiting for data to arrive from slower memory levels. 
+                <br><br>Meanwhile, the ikj ordering completed in just 0.34 seconds with 0.78 GFLOPS — more than double the throughput. 
+                The kij ordering performed similarly at 0.36 seconds and 0.74 GFLOPS. 
+                These aren't small improvements — we're talking about getting more than twice the work done in the same amount of time, purely by being smarter about memory access patterns.
+            </p>
+            <p>This is the power of cache-aware programming. 
+                Same algorithm, same number of operations, same hardware — but radically different performance simply because we're working <em>with</em> the cache hierarchy instead of against it.
+            </p>
+
+            <h4>Understanding the Results: A Deep Dive with Concrete Examples</h4>
+            <p>Numbers are great, but let's understand <em>why</em> we're seeing these performance differences. 
+                We'll walk through exactly what happens at the hardware level when each loop ordering executes, using concrete examples with realistic cache behavior, memory latency, and CPU pipeline effects.</p>
+            
+            <h4>Setting Up Our Example with Real Hardware Characteristics</h4>
+            <p>Let's work with small 4×4 matrices for visualization, but we'll also analyze the full 512×512 case. 
+                First, let's establish our hardware model based on typical modern CPUs:</p>
+
+            <pre><code>
+            <strong>Cache Hierarchy (Typical x86-64 CPU):</strong>
+┌─────────────────────────────────────────────────────────────┐
+│ L1 Data Cache: 32 KB, 8-way set associative                │
+│   - Cache Line Size: 64 bytes (8 doubles)                   │
+│   - Latency: ~4 cycles (~1.3 ns @ 3 GHz)                   │
+│   - Bandwidth: ~100 GB/s                                     │
+├─────────────────────────────────────────────────────────────┤
+│ L2 Cache: 256 KB, 8-way set associative                    │
+│   - Latency: ~12 cycles (~4 ns)                             │
+│   - Bandwidth: ~50 GB/s                                      │
+├─────────────────────────────────────────────────────────────┤
+│ L3 Cache: 8 MB, 16-way set associative                     │
+│   - Latency: ~40 cycles (~13 ns)                            │
+│   - Bandwidth: ~30 GB/s                                      │
+├─────────────────────────────────────────────────────────────┤
+│ Main Memory (DDR4): 16 GB                                    │
+│   - Latency: ~200 cycles (~65 ns)                           │
+│   - Bandwidth: ~20 GB/s                                      │
+└─────────────────────────────────────────────────────────────┘
+            </code></pre>
+            <p><strong>Important Constants:</strong>
+            <ul>
+                <li>sizeof(double) = 8 bytes</li>
+                <li>Cache line = 64 bytes = 8 doubles</li>
+                <li>Matrix size = 512 × 512 = 262,144 doubles = 2 MB per matrix</li>
+                <li>Total working set = 3 matrices = 6 MB (fits in L3, spills from L1/L2)</li>
+            </ul>
+            </p>
+            <h4>How Matrices Are Stored in Memory (Row-Major Order)</h4>
+            <p>In C, matrices are stored in <strong>row-major order</strong>. Understanding the exact memory layout is crucial:</p>
+            <pre><code>
+Matrix A:                      Matrix B:
+┌─────────────────┐           ┌─────────────────┐
+│  1   2   3   4  │           │  9  10  11  12  │
+│  5   6   7   8  │           │ 13  14  15  16  │
+│  9  10  11  12  │           │ 17  18  19  20  │
+│ 13  14  15  16  │           │ 21  22  23  24  │
+└─────────────────┘           └─────────────────┘
+
+Memory Layout (each box = 8 bytes):
+Address:  0x1000    0x1008    0x1010    0x1018    0x1020    0x1028...
+A:       [   1   ][   2   ][   3   ][   4   ][   5   ][   6   ]...
+          A[0][0]  A[0][1]  A[0][2]  A[0][3]  A[1][0]  A[1][1]
+
+Address:  0x2000    0x2008    0x2010    0x2018    0x2020    0x2028...
+B:       [   9   ][  10   ][  11   ][  12   ][  13   ][  14   ]...
+          B[0][0]  B[0][1]  B[0][2]  B[0][3]  B[1][0]  B[1][1]
+            </code></pre>
+            <p><strong>Column Access Pattern (the problem):</strong></p>
+            <ul>
+                <li>B[0][0] is at address: 0x2000</li>
+                <li>B[1][0] is at address: 0x2000 + (1 × 4 × 8) = 0x2020 (skip 4 doubles)</li>
+                <li>B[2][0] is at address: 0x2000 + (2 × 4 × 8) = 0x2040 (skip 4 doubles)</li>
+                <li>B[3][0] is at address: 0x2000 + (3 × 4 × 8) = 0x2060 (skip 4 doubles)</li>
+            </ul>
+
+            <p><strong>For 512×512 matrices:</strong></p>
+            <p>
+            <ul>
+                <li>B[0][0] is at address: base</li>
+                <li>B[1][0] is at address: base + 4096 bytes (skip 512 doubles = 4 KB!)</li>
+                <li>B[2][0] is at address: base + 8192 bytes (skip another 4 KB)</li>
+                <li>...</li>
+            </ul>
+
+            <h4>Cache Line Behavior and Set-Associative Mapping</h4>
+            <p>Modern caches are <strong>set-associative</strong>, not fully associative. 
+                This matters for understanding conflicts:</p>
+            <p><strong>L1 Cache Organization (32 KB, 8-way set associative):</strong></p>
+            <ul>
+                <li>Total cache lines: 32 KB ÷ 64 bytes = 512 cache lines</li>
+                <li>Number of sets: 512 ÷ 8 ways = 64 sets</li>
+                <li>Each memory address maps to a specific set based on its address</li>
+            </ul>
+            
+            <pre><code>
+Address Breakdown (Assuming 64-byte cache lines):
+┌──────────────┬──────────────┬────────────────┐
+│   Tag bits   │  Set Index   │  Offset (6b)  │
+│              │   (6 bits)   │   (0-63)      │
+└──────────────┴──────────────┴────────────────┘
+                 determines     determines byte
+                 which set      within cache line
+            </code></pre>
+
+            <p><strong>Cache Conflict Example:</strong></p>
+            <p>If addresses map to the same set but we have more than 8 of them in use, we get "cache thrashing" - constantly evicting and reloading lines.</p>
+
+            <p>For 512×512 matrices accessing columns:</p>
+            <ul>
+                <li>Row 0, column 0: maps to set X</li>
+                <li>Row 1, column 0: maps to set Y (Y = X + 64, wraps around)</li>
+                <li>Row 8, column 0: maps to set X again! (potential conflict)</li>
+                <li>Row 16, column 0: maps to set X again! (evicting previous data)</li>
+            </ul>
+
+            <h4>The ijk Ordering: A Cycle-by-Cycle Analysis</h4>
+            <p>Let's trace what happens when we compute <code>C[0][0]</code> using ijk ordering, counting CPU cycles:</p>
+
+            <pre><code>
+// The ijk loop structure in C:
+for (int i = 0; i < N; i++) {         // i = 0
+    for (int j = 0; j < N; j++) {     // j = 0
+        C[i][j] = 0.0;                 // C[0][0] = 0.0
+        for (int k = 0; k < N; k++) {  // k = 0, 1, 2, 3...
+            C[i][j] += A[i][k] * B[k][j];
+        }
+    }
+}
+            </code></pre>
+            <strong>Let's look at Iteration-by-iteration for C[0][0]:</strong>
+            <pre><code>
+<strong>k=0: C[0][0] += A[0][0] * B[0][0]</strong>
+     - Load A[0][0]: L1 miss → load cache line [A[0][0]...A[0][7]] → ~4 cycles
+     - Load B[0][0]: L1 miss → load cache line [B[0][0]...B[0][7]] → ~4 cycles
+     - Multiply: 1 cycle (pipelined)
+     - Add to C[0][0]: 1 cycle
+     - Total: ~10 cycles
+
+<strong>k=1: C[0][0] += A[0][1] * B[1][0]</strong>
+     - Load A[0][1]: L1 HIT (in cache from k=0) → ~1 cycle
+     - Load B[1][0]: L1 MISS (different row, 4KB away)
+                     → Best case L2: ~12 cycles
+                     → Likely L3: ~40 cycles
+     - Multiply + Add: 2 cycles
+     - Total: ~43-55 cycles
+
+<strong>k=2: C[0][0] += A[0][2] * B[2][0]</strong>
+     - Load A[0][2]: L1 HIT → ~1 cycle
+     - Load B[2][0]: L1 MISS → ~40 cycles (L3) or ~200 cycles (RAM)
+     - Multiply + Add: 2 cycles
+     - Total: ~43-203 cycles
+
+<strong>k=3: C[0][0] += A[0][3] * B[3][0]</strong>
+     - Load A[0][3]: L1 HIT → ~1 cycle
+     - Load B[3][0]: L1 MISS → ~40-200 cycles
+     - Multiply + Add: 2 cycles
+     - Total: ~43-203 cycles
+            </code></pre>
+            <p><strong>For 4×4 matrix, computing ONE element C[0][0]:</strong></p>
+            <ul>
+                <li>Total cycles: 10 + 43 + 43 + 43 = ~139 cycles (best case with L3 hits)</li>
+                <li>Or: 10 + 200 + 200 + 200 = ~610 cycles (worst case with RAM)</li>
+                <li>Cache misses on B: 4 out of 4 accesses (100% miss rate!)</li>
+                <li>Time waiting for memory: ~130-600 cycles</li>
+                <li>Time computing: ~6 cycles</li>
+                <li>Memory stalls are 20-100x longer than computation!</li>
+            </ul>
+
+            <p><strong>For 512×512 matrix, computing ONE element C[0][0]:</strong></p>
+            <ul>
+                <li>Total accesses to B: 512</li>
+                <li>Cache hits: 0 (complete cache thrashing due to set conflicts)</li>
+                <li>Cache misses: 512 (every access misses!)</li>
+                <li>Time per cache miss:
+                    <ul>
+                        <li>If in L2: ~12 cycles × 512 = 6,144 cycles</li>
+                        <li>If in L3: ~40 cycles × 512 = 20,480 cycles</li>
+                        <li>If in RAM: ~200 cycles × 512 = 102,400 cycles</li>
+                    </ul>
+                </li>
+                <li>Arithmetic operations: 512 muls + 512 adds = 1,024 ops at 1-2 cycles each</li>
+                <li>Memory stalls DOMINATE: 20,480 cycles waiting vs 1,024 cycles computing (20x more time waiting!)</li>
+            </ul>
+
+            <p><strong>Full matrix (262,144 elements × 512 operations each):</strong></p>
+            <ul>
+                <li>Total B column accesses: 134 million</li>
+                <li>Cache misses: ~130 million (near 100% miss rate due to pathological cache thrashing)</li>
+                <li>Time in cache misses alone: 130M × 40 cycles = 5.2 billion cycles = 1.73 seconds @ 3GHz</li>
+                <li>Our observed time was 0.79 seconds, which is faster than this estimate because:
+                    <ul>
+                        <li>Some accesses hitting L2 instead of L3 (lower latency)</li>
+                        <li>Compiler optimizations (register reuse, loop unrolling)</li>
+                        <li>Hardware prefetching reducing effective latency for some patterns</li>
+                    </ul>
+                </li>
+                <li>The model correctly predicts the order of magnitude and explains why ijk ordering is slow</li>
+            </ul>
+
+            <h4>The ikj Ordering: Why It's 2.3x Faster</h4>
+            <p>Now the same computation with ikj ordering:</p>
+            <pre><code>
+// The ikj loop structure in C:
+for (int i = 0; i < N; i++) {         // i = 0
+    for (int k = 0; k < N; k++) {     // k = 0
+        for (int j = 0; j < N; j++) { // j = 0, 1, 2, 3...
+            C[i][j] += A[i][k] * B[k][j];
+        }
+    }
+}
+            </code></pre>
+            <p><strong>Let's look at iteration-by-iteration for i=0, k=0:</strong></p>
+            <pre><code>
+<strong>j=0: C[0][0] += A[0][0] * B[0][0]</strong>
+     - Load A[0][0]: L1 miss → load [A[0][0]...A[0][7]] → ~4 cycles
+     - Load B[0][0]: L1 miss → load [B[0][0]...B[0][7]] → ~4 cycles
+     - Multiply + Add: 2 cycles
+     - Total: ~10 cycles
+
+<strong>j=1: C[0][1] += A[0][0] * B[0][1]</strong>
+     - Load A[0][0]: IN REGISTER (reused from j=0) → 0 cycles!
+     - Load B[0][1]: L1 HIT (consecutive in cache line) → ~1 cycle
+     - Multiply + Add: 2 cycles
+     - Total: ~3 cycles
+
+<strong>j=2: C[0][2] += A[0][0] * B[0][2]</strong>
+     - A[0][0]: still in register → 0 cycles
+     - B[0][2]: L1 HIT → ~1 cycle
+     - Multiply + Add: 2 cycles
+     - Total: ~3 cycles
+
+j=3 through j=7: Similar, ~3 cycles each
+
+<strong>j=8: C[0][8] += A[0][0] * B[0][8]</strong>
+     - A[0][0]: still in register
+     - B[0][8]: NEW cache line → L1 miss → ~4 cycles
+     - Multiply + Add: 2 cycles
+     - Total: ~6 cycles
+            </code></pre>
+            <p><strong>Pattern for 512 iterations (full row):</strong></p>
+            <p>When we process the entire innermost loop (j from 0 to 511), we're accessing B[0][0] through B[0][511] sequentially. 
+                Since each cache line holds 8 doubles, we need to load 64 cache lines total. This means:</p>
+
+            <ul>
+                <li>Cache line loads: 512 elements ÷ 8 per line = 64 cache line loads</li>
+                <li>Cache hits: 512 - 64 = 448 hits</li>
+                <li>Hit rate: 448/512 = 87.5% (compared to 0% for ijk!)</li>
+            </ul>
+
+            <p><strong>Cycles per iteration:</strong></p>
+            <ul>
+                <li>First element of each cache line (64 times): ~6 cycles</li>
+                <li>Remaining 7 elements of each line (448 times): ~3 cycles</li>
+                <li>Total: 64 × 6 + 448 × 3 = 384 + 1,344 = 1,728 cycles for 512 operations</li>
+            </ul>
+
+            <p><strong>Compare to ijk for same 512 operations:</strong></p>
+            <ul>
+                <li>ijk: ~20,480 cycles (512 cache misses × 40 cycles each)</li>
+                <li>ikj: ~1,728 cycles</li>
+                <li>Speedup: ~12x for this inner loop alone!</li>
+            </ul>
+
+            <p><strong>But why only 2.3x overall speedup instead of 12x?</strong></p>
+            <ul>
+                <li>The 12x speedup only applies to the innermost loop execution</li>
+                <li>Outer loops (changing i and k values) introduce additional memory accesses</li>
+                <li>Writing to C matrix also causes cache pressure and potential misses</li>
+                <li>Overall program includes initialization, verification, and other overhead</li>
+            </ul>
+
+            <h4>The Fundamental Lesson</h4>
+            <p>This deep dive reveals several critical insights about modern computer architecture for us, the software engineers, to understand:</p>
+            <ul>
+                <li><strong>Memory is the bottleneck:</strong> We spend 200 cycles waiting for memory but only 1-2 cycles computing. A modern CPU can do billions of operations per second, but only if you keep it fed with data.</li>
+                <li><strong>Cache hierarchy is everything:</strong> The difference between L1 (4 cycles) and RAM (200 cycles) is 50x. Keeping data in cache is worth more than most algorithmic improvements.</li>
+                <li><strong>Access patterns matter more than code:</strong> ijk and ikj have identical algorithms and operation counts. The only difference is the order of memory access. Yet one is 2.3x faster.</li>
+                <li><strong>Hardware is optimized for sequential access:</strong> CPUs have prefetchers, cache lines, and TLBs all designed around the assumption that you'll access consecutive memory locations. Fighting this costs you dearly.</li>
+                <li><strong>The roofline model applies:</strong> Our ikj implementation achieves 0.78 GFLOPS out of a theoretical 12 GFLOPS peak (6.5% efficiency). We're memory-bound, not compute-bound.</li>
+            </ul>
+            <p><strong>The takeaway</strong>: Modern CPUs are lightning-fast at computation but still bottlenecked by memory access — the so-called "memory wall." 
+                Our 2.3x speedup came entirely from improving memory access patterns, not from any algorithmic tricks or specialized instructions. 
+                And this is just the beginning — next, we’re moving on to <strong>tiling</strong>, where we’ll push cache efficiency even further.
+            </p>
+            <h2>6. What Is Tiling and Why It Works</h2>
         </div>
     </article>
 </body>
