@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CPU and its Cache - suresh neethimohan blog</title>
+    <title>CPU and its Cache</title>
     <style>
         @import url('https://unpkg.com/normalize.css');
 
@@ -98,21 +98,24 @@
         }
 
         .blog-content h2 {
+            font-family: 'roboto mono', monospace;
             font-size: 1.5rem;
             margin: 2.5rem 0 1rem 0;
             font-weight: 600;
         }
 
         .blog-content h3 {
+            font-family: 'roboto mono', monospace;
             font-size: 1.25rem;
             margin: 2rem 0 0.75rem 0;
-            font-weight: 500;
+            font-weight: 600;
         }
 
         .blog-content h4 {
+            font-family: 'roboto mono', monospace;
             font-size: 1.1rem;
             margin: 1.5rem 0 0.5rem 0;
-            font-weight: 500;
+            font-weight: 600;
         }
 
         .blog-content code {
@@ -124,7 +127,7 @@
         }
 
         .blog-content pre {
-            background: color-mix(in hsl, canvas, canvasText 10%);
+            background: #f5f5f0;
             padding: 1rem;
             border-radius: 8px;
             overflow-x: auto;
@@ -132,6 +135,8 @@
             font-family: 'Monaco', 'Courier New', monospace;
             font-size: 0.875rem;
             line-height: 1.5;
+            border: 2px solid #8b7355;
+            color: #666;
         }
 
         .blog-content pre code {
@@ -299,10 +304,7 @@
                 <li>Remaining 49 accesses per element = <em>cache hits</em> → served from cache (20 cycles).</li>
             </ul>
             <p>So the math looks like this:</p>
-            <pre>Cache misses: 50 × 300 = 15,000 cycles
-                Cache hits: 50 × 49 × 20 = 49,000 cycles
-                Total (with cache) = 15,000 + 49,000 = 64,000 cycles
-            </pre>
+            <pre>Cache misses: 50 × 300 = 15,000 cycles<br>Cache hits: 50 × 49 × 20 = 49,000 cycles<br>Total (with cache) = 15,000 + 49,000 = 64,000 cycles</pre>
 
             <h3>The result:</h3>
             <ul>
@@ -448,21 +450,220 @@
                 Here are approximate latencies for a modern x86 processor (actual numbers vary by generation and workload):
             </p>
             <ul>
-            <li><strong>Register Access:</strong> ~1 cycle — data is already in the CPU's registers, the fastest storage available.</li>
-            <li><strong>L1 Cache Hit:</strong> ~4-5 cycles — extremely fast, making L1 performance critical.</li>
-            <li><strong>L2 Cache Hit:</strong> ~12-15 cycles — noticeably slower than L1 but still fast.</li>
-            <li><strong>L3 Cache Hit:</strong> ~40-50 cycles — acts as a shared backstop before hitting main memory.</li>
-            <li><strong>Main Memory (DRAM):</strong> ~200-300+ cycles — orders of magnitude slower than cache. This is why cache misses are so expensive.</li>
+                <li><strong>Register Access:</strong> ~1 cycle — data is already in the CPU's registers, the fastest storage available.</li>
+                <li><strong>L1 Cache Hit:</strong> ~4-5 cycles — extremely fast, making L1 performance critical.</li>
+                <li><strong>L2 Cache Hit:</strong> ~12-15 cycles — noticeably slower than L1 but still fast.</li>
+                <li><strong>L3 Cache Hit:</strong> ~40-50 cycles — acts as a shared backstop before hitting main memory.</li>
+                <li><strong>Main Memory (DRAM):</strong> ~200-300+ cycles — orders of magnitude slower than cache. This is why cache misses are so expensive.</li>
             </ul>
             <p>
                 These timings can vary based on factors like memory contention, prefetching effectiveness, and TLB (Translation Lookaside Buffer) hits or misses. 
                 The key takeaway: <strong>cache hits are cheap, cache misses are catastrophic</strong>. 
                 The performance gap between L1 and RAM is roughly <strong>50-100x</strong>, which is why optimizing for cache locality is one of the highest-leverage performance techniques available to programmers.
             </p>
-            <h2>7. Address Splitting for Cache Access: Locating Data in the Hierarchy</h2> <p>To efficiently locate data in a multi-level cache, the CPU splits memory addresses into distinct components. This helps determine if a requested piece of data is in the cache and where.</p> <ul> <li><strong>Offset (Block Offset):</strong> Lowest bits of the address specify the byte or word position within the cache line. For a 64-byte cache line, the lowest 6 bits (2^6 = 64) serve as the offset.</li> <li><strong>Cache Set Index (Set Field):</strong> Middle bits above the offset determine which cache set to search. In set-associative caches, each set holds multiple cache lines (e.g., 8-way associativity = 8 lines per set). Using the set index narrows the search to a subset of the cache.</li> <li><strong>Tag (Tag Field):</strong> Highest bits of the address uniquely identify a memory block. When the CPU searches a set, it compares the requested tag with stored tags. A match = cache hit; no match = cache miss, requiring access to a slower memory level.</li> </ul> <p>This three-part address splitting allows caches to be both fast and practical. It directs the CPU quickly to the right set, while the tag confirms that the correct block of memory is present, enabling efficient management of limited high-speed storage.</p> 
-            <h2>Example: How a Memory Address is Split for Cache Access</h2> <p>Suppose we have a CPU with the following cache configuration:</p> <ul> <li>Cache line size: 64 bytes</li> <li>Cache: 4-way set associative</li> <li>Number of sets: 16 (so 4 cache lines per set)</li> </ul> <p>Now imagine the CPU wants to access memory address <code>0x3AC</code> (hexadecimal).</p> <h3>Step 1: Convert to binary</h3> <p>0x3AC = <code>0011 1010 1100</code> in binary (12 bits for simplicity).</p> <h3>Step 2: Identify the parts</h3> <ul> <li><strong>Offset:</strong> Cache line size is 64 bytes → 6 bits are needed to address bytes within the line (2<sup>6</sup> = 64). The lowest 6 bits of the address are <code>101100</code> (decimal 44). This tells us the exact byte within the cache line.</li> <li><strong>Set index:</strong> Next 4 bits determine which cache set to look in (16 sets → 2<sup>4</sup> = 16). The 4 bits above the offset are <code>1110</code> (decimal 14). So the CPU searches set #14.</li> <li><strong>Tag:</strong> The remaining highest bits are <code>00</code> (decimal 0). This identifies which memory block is stored in that set.</li> </ul> <h3>Step 3: How the CPU checks the cache</h3> <ol> <li>Go to set #14 in the cache.</li> <li>Compare the tag of each line in that set with <code>00</code>.</li> <li>If a match is found → cache hit → access byte 44 (offset) in that line.</li> <li>If no match → cache miss → fetch the block from main memory and store it in one of the lines in set #14.</li> </ol> <p>This corrected example shows exactly how the CPU splits a memory address into <strong>tag, set index, and offset</strong> to efficiently locate data in a multi-level cache.</p>
-            <h2>8. Cache Write Operations: Ensuring Data Integrity and Performance</h2> <p>When the CPU writes data, caches introduce extra complexity. How writes are handled affects both performance and data integrity.</p> <h3>8a. Loading the Full Cache Line</h3> <p>Most caches cannot modify just part of a cache line. If a CPU writes a few bytes, the <strong>entire cache line</strong> must first be loaded into the cache (unless using write-combining). This ensures the cache has the latest version before modification.</p> <h3>8b. Dirty Cache Lines</h3> <p>Once modified, a cache line differs from main memory. It is marked <strong>dirty</strong> to indicate that it must eventually be written back. If it’s unmodified, it’s considered <strong>clean</strong>.</p> <h3>8c. Write Policies</h3> <p>Two main strategies exist:</p> <ul> <li><strong>Write-Through:</strong> Updates go immediately to both cache and main memory. Ensures consistency but creates high memory bus traffic. Cache lines can be discarded without worry.</li> <li><strong>Write-Back:</strong> Updates only the cache and marks it dirty. Memory is updated only when the line is evicted or flushed. Reduces bus traffic and improves performance but requires careful coherency management in multi-core systems.</li> </ul> <h3>8d. Special Write Regions</h3> <ul> <li><strong>Write-Combining:</strong> Buffers multiple adjacent writes to fill a cache line before sending it out. Useful for devices like graphics memory.</li> <li><strong>Uncacheable Memory:</strong> Certain regions bypass the cache entirely. Used for memory-mapped I/O or special hardware registers to avoid stale data.</li> </ul>
-            <h2>9. Cache Eviction and Data Movement: Making Room for New Data</h2> <p>Caches are limited in size, so older or less-used data must be removed to make room for new data.</p> <h3>Eviction Necessity</h3> <p>If a new data block maps to a full cache set, one line must be chosen as a <strong>victim</strong> and evicted.</p> <h3>Hierarchical Movement</h3> <ul> <li>If the evicted line is <strong>dirty</strong>, it must be written to the next level of memory (L1 → L2 → L3 → main memory).</li> <li>Evicting from higher-level caches is cheaper than lower levels due to lower latency.</li> </ul> <h3>Exclusive vs. Inclusive Caches</h3> <ul> <li><strong>Exclusive:</strong> Each cache line exists in only one level at a time. L1 eviction moves the line to L2, L2 eviction moves to L3. Maximizes effective cache capacity.</li> <li><strong>Inclusive:</strong> Lower-level caches (L1) must also exist in higher levels (L2). L1 eviction is simpler because L2 already has a copy, but duplicates reduce unique capacity.</li> </ul> <p>Cache replacement policies (like LRU – Least Recently Used) determine which lines to evict based on usage history.</p>
+
+            <h3>7. Address Splitting for Cache Access: Locating Data in the Hierarchy</h3>
+            <p>
+                To efficiently locate data in a multi-level cache, the CPU splits memory addresses into distinct components. 
+                This helps determine if a requested piece of data is in the cache and where.
+            </p>
+            <ul>
+                <li><strong>Offset (Block Offset):</strong> Lowest bits of the address specify the byte position within the cache line. For a 64-byte cache line, the lowest 6 bits (2^6 = 64) serve as the offset.</li>
+                <li><strong>Index (Set Field):</strong> Middle bits above the offset determine which cache set to search. In set-associative caches, each set holds multiple cache lines (e.g., 8-way associativity = 8 lines per set). The index narrows the search to a specific set.</li>
+                <li><strong>Tag (Tag Field):</strong> Highest bits of the address uniquely identify which memory block is stored. When the CPU searches a set, it compares the requested tag with the tags of all lines in that set. A match = cache hit; no match = cache miss, requiring access to a slower memory level.</li>
+            </ul>
+            <p>
+                This three-part address splitting allows caches to be both fast and practical. 
+                The index directs the CPU quickly to the right set, while the tag confirms that the correct block of memory is present, enabling efficient management of limited high-speed storage.</p>
+
+            <h3>Example: How a Memory Address is Split for Cache Access</h3>
+            <p>Suppose we have a CPU with the following cache configuration:</p>
+            <ul>
+                <li><strong>Cache line size:</strong> 64 bytes</li>
+                <li><strong>Cache organization:</strong> 8-way set associative (8 lines per set)</li>
+                <li><strong>Total cache size:</strong> 32 KB</li>
+                <li><strong>Number of sets:</strong> 32 KB ÷ (64 bytes/line × 8 lines/set) = <strong>64 sets</strong></li>
+            </ul>
+            <p>Now imagine the CPU wants to access memory address <code>0x0001A2C0</code> (32-bit address).</p>
+            <p><strong>Step 1: Convert to binary</strong></p>
+            <pre>0x0001A2C0 = 0000 0000 0000 0001 1010 0010 1100 0000</pre>
+            <p><strong>Step 2: Split the address</strong></p>
+            <p>For 64 sets, we need log₂(64) = <strong>6 bits</strong> for the index.<br>
+                For 64-byte lines, we need log₂(64) = <strong>6 bits</strong> for the offset.</p>
+            <pre>Tag (20 bits)              Index (6 bits)      Offset (6 bits)
+0000000000000001101000      | 101100            | 000000
+0x0006A                     |   44              |   0</pre>
+
+            <p>Breaking it down:</p>
+            <ul>
+                <li><strong>Offset:</strong> <code>000000</code> (binary) = <strong>0</strong> (decimal) — we're accessing the first byte in the cache line</li>
+                <li><strong>Index:</strong> <code>101100</code> (binary) = <strong>44</strong> (decimal) — the CPU searches <strong>set #44</strong></li>
+                <li><strong>Tag:</strong> <code>0x0006A</code> — this identifies which specific memory block should be in that set</li>
+            </ul>
+            <p><strong>Step 3: How the CPU checks the cache</strong></p>
+            <ol>
+                <li>Go to <strong>set #44</strong> in the cache.</li>
+                <li>Compare the tag <code>0x0006A</code> with the tags of all <strong>8 lines</strong> in that set (since it's 8-way associative).</li>
+                <li><strong>If a match is found</strong> → <strong>cache hit</strong> → the CPU reads the data from that line.</li>
+                <li><strong>If no match</strong> → <strong>cache miss</strong> → the CPU fetches the entire 64-byte block from the next level (L2, L3, or RAM) and stores it in one of the 8 lines in set #44, potentially evicting an existing line using a replacement policy (LRU, random, etc.).</li>
+            </ol>
+            <div style="border: 2px solid #8b7355; padding: 20px; background-color: #f5f5f0; margin: 20px 0; border-radius: 8px;">
+            
+            <div style="border: 1px solid #a0826d; padding: 15px; margin: 15px 0; background-color: #fff;">
+                <div style="font-weight: bold; color: #5d4e37; margin-bottom: 10px;">Set #42</div>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <div style="border: 1px solid #ccc; padding: 10px; background-color: #fafafa; min-width: 140px; font-family: monospace; font-size: 14px;">
+                    <div style="color: #8b4513; font-weight: bold;">Tag: 0x00012</div>
+                    <div style="color: #666; font-size: 12px; margin-top: 5px;">64 bytes of data...</div>
+                </div>
+                <div style="border: 1px solid #ccc; padding: 10px; background-color: #fafafa; min-width: 140px; font-family: monospace; font-size: 14px;">
+                    <div style="color: #8b4513; font-weight: bold;">Tag: 0x0003F</div>
+                    <div style="color: #666; font-size: 12px; margin-top: 5px;">64 bytes of data...</div>
+                </div>
+                <div style="color: #666; padding: 10px;">... (6 more lines)</div>
+                </div>
+            </div>
+            
+            <div style="border: 1px solid #a0826d; padding: 15px; margin: 15px 0; background-color: #fff;">
+                <div style="font-weight: bold; color: #5d4e37; margin-bottom: 10px;">Set #43</div>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <div style="border: 1px solid #ccc; padding: 10px; background-color: #fafafa; min-width: 140px; font-family: monospace; font-size: 14px;">
+                    <div style="color: #8b4513; font-weight: bold;">Tag: 0x00089</div>
+                    <div style="color: #666; font-size: 12px; margin-top: 5px;">64 bytes of data...</div>
+                </div>
+                <div style="border: 1px solid #ccc; padding: 10px; background-color: #fafafa; min-width: 140px; font-family: monospace; font-size: 14px;">
+                    <div style="color: #8b4513; font-weight: bold;">Tag: 0x000A1</div>
+                    <div style="color: #666; font-size: 12px; margin-top: 5px;">64 bytes of data...</div>
+                </div>
+                <div style="color: #666; padding: 10px;">... (6 more lines)</div>
+                </div>
+            </div>
+            
+            <div style="border: 3px solid #8b4513; padding: 15px; margin: 15px 0; background-color: #fef9f3; box-shadow: 0 0 8px rgba(139, 69, 19, 0.3);">
+                <div style="font-weight: bold; color: #5d4e37; margin-bottom: 10px;">Set #44 ← INDEX points here!</div>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <div style="border: 1px solid #ccc; padding: 10px; background-color: #fafafa; min-width: 140px; font-family: monospace; font-size: 14px;">
+                    <div style="color: #8b4513; font-weight: bold;">Tag: 0x00012</div>
+                    <div style="color: #666; font-size: 12px; margin-top: 5px;">64 bytes of data...</div>
+                </div>
+                <div style="border: 1px solid #ccc; padding: 10px; background-color: #fafafa; min-width: 140px; font-family: monospace; font-size: 14px;">
+                    <div style="color: #8b4513; font-weight: bold;">Tag: 0x00045</div>
+                    <div style="color: #666; font-size: 12px; margin-top: 5px;">64 bytes of data...</div>
+                </div>
+                <div style="border: 3px solid #6b4423; padding: 10px; background-color: #f0e6dc; min-width: 140px; font-family: monospace; font-size: 14px; box-shadow: 0 0 8px rgba(107, 68, 35, 0.4);">
+                    <div style="color: #8b4513; font-weight: bold;">Tag: 0x0006A ✓ MATCH!</div>
+                    <div style="color: #666; font-size: 12px; margin-top: 5px;">64 bytes of data...</div>
+                    <div style="color: #6b4423; font-weight: bold; margin-top: 5px;">↑ This is our data!</div>
+                </div>
+                <div style="border: 1px solid #ccc; padding: 10px; background-color: #fafafa; min-width: 140px; font-family: monospace; font-size: 14px;">
+                    <div style="color: #8b4513; font-weight: bold;">Tag: 0x000B2</div>
+                    <div style="color: #666; font-size: 12px; margin-top: 5px;">64 bytes of data...</div>
+                </div>
+                <div style="color: #666; padding: 10px;">... (4 more lines)</div>
+                </div>
+            </div>
+            
+            <div style="border: 1px solid #a0826d; padding: 15px; margin: 15px 0; background-color: #fff;">
+                <div style="font-weight: bold; color: #5d4e37; margin-bottom: 10px;">Set #45</div>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <div style="border: 1px solid #ccc; padding: 10px; background-color: #fafafa; min-width: 140px; font-family: monospace; font-size: 14px;">
+                    <div style="color: #8b4513; font-weight: bold;">Tag: 0x0001D</div>
+                    <div style="color: #666; font-size: 12px; margin-top: 5px;">64 bytes of data...</div>
+                </div>
+                <div style="border: 1px solid #ccc; padding: 10px; background-color: #fafafa; min-width: 140px; font-family: monospace; font-size: 14px;">
+                    <div style="color: #8b4513; font-weight: bold;">Tag: 0x00078</div>
+                    <div style="color: #666; font-size: 12px; margin-top: 5px;">64 bytes of data...</div>
+                </div>
+                <div style="color: #666; padding: 10px;">... (6 more lines)</div>
+                </div>
+            </div>
+            
+            <div style="color: #666; text-align: center; padding: 15px; font-style: italic;">
+                ... (59 more sets, up to Set #63)
+            </div>
+            </div>
+            <p>This example shows exactly how the CPU splits a memory address into <strong>tag, index, and offset</strong> to efficiently locate data in a set-associative cache.</p>
+            
+            <h3>8. Cache Write Operations: Ensuring Data Integrity and Performance</h3>
+            <p>
+                When the CPU writes data, caches introduce extra complexity. 
+                How writes are handled affects both performance and data integrity.</p>
+
+            <h4>Write Allocation and Partial Writes</h4>
+            <p>
+                When the CPU writes to memory, the cache must decide whether to bring the data into cache (if it's not already there). 
+                There are two approaches:</p>
+            <ul>
+                <li><strong>Write-Allocate:</strong> On a write miss, the cache line is loaded from memory into the cache before being modified. This is common in write-back caches because future reads or writes to that line will benefit from it being cached.</li>
+                <li><strong>No-Write-Allocate:</strong> On a write miss, the data is written directly to memory without loading it into cache. Common in write-through caches to avoid unnecessary cache pollution.</li>
+            </ul>
+            <p>
+                For partial writes (e.g., writing just 4 bytes of a 64-byte line), the cache must perform a <strong>read-modify-write</strong>: load the full line, modify the relevant bytes, then mark it dirty. 
+                This ensures the cache line contains coherent data.
+            </p>
+            <h4>Dirty Cache Lines</h4>
+            <p>
+                Once a cache line is modified, it differs from the data in main memory. 
+                The cache marks it as <strong>dirty</strong> to indicate that it must eventually be written back. 
+                An unmodified line is <strong>clean</strong> and can be evicted without writing to memory.</p>
+            <p>Dirty lines are written back to memory when:</p>
+            <ul>
+                <li>The line is evicted to make room for new data</li>
+                <li>The cache is explicitly flushed (e.g., during context switches or I/O operations)</li>
+                <li>Cache coherence protocols require it (in multi-core systems)</li>
+            </ul>
+            <h4>Write Policies</h4>
+            <p>Two main strategies control when modified data reaches main memory:</p>
+            <ul>
+                <li><strong>Write-Through:</strong> Every write updates both the cache and main memory immediately. This ensures memory is always up-to-date but generates significant memory bus traffic. Clean lines can be evicted instantly without writeback. Typically paired with no-write-allocate.</li>
+                <li><strong>Write-Back:</strong> Writes only update the cache and mark the line as dirty. Memory is updated only when the dirty line is evicted or flushed. This dramatically reduces bus traffic and improves performance but requires careful coherency management in multi-core systems. Typically paired with write-allocate.</li>
+            </ul>
+            <h4>Special Write Regions</h4>
+            <ul>
+                <li><strong>Write-Combining (WC):</strong> A special memory type that allows multiple writes to be coalesced in a write-combining buffer before being sent to memory as a single burst. The CPU doesn't guarantee ordering between WC writes, making it ideal for frame buffers and graphics memory where sequential ordering isn't critical but bandwidth is precious.</li>
+                <li><strong>Uncacheable (UC) Memory:</strong> Certain regions bypass the cache entirely, with reads and writes going directly to memory or hardware. This is essential for memory-mapped I/O registers, DMA buffers, and hardware that requires real-time visibility of every access. Caching such regions would cause stale data and incorrect behavior.</li>
+            </ul>
+
+            <h3>9. Cache Eviction and Data Movement: Making Room for New Data</h3>
+            <p>Caches are limited in size, so when new data needs to be loaded and the cache is full, older or less-used data must be removed.</p>
+
+            <h4>When Eviction Happens</h4>
+            <p>
+                Eviction occurs when there's a <strong>cache miss</strong> and the target cache set is already full. 
+                The cache must choose a <strong>victim line</strong> to evict before loading the new data. 
+                What happens next depends on whether the victim is clean or dirty:
+            </p>
+            <ul>
+                <li><strong>Clean lines:</strong> Can be discarded immediately since they match the data in the next level of memory. No write-back needed.</li>
+                <li><strong>Dirty lines:</strong> Must be written back to the next level of the memory hierarchy (L1 → L2 → L3 → main memory) before being replaced.</li>
+            </ul>
+            <h4>Hierarchical Movement</h4>
+            <p>Eviction costs vary by cache level:</p>
+            <ul>
+                <li>Evicting from <strong>L1</strong> (closest to CPU) writes back to L2, which is fast (~12-15 cycles)</li>
+                <li>Evicting from <strong>L2</strong> writes back to L3, which is slower (~40-50 cycles)</li>
+                <li>Evicting from <strong>L3</strong> (farthest from CPU) writes back to main memory, which is very expensive (~200-300+ cycles)</li>
+            </ul>
+            <p>This is why keeping frequently-used data in L1 is so critical — each level down the hierarchy gets progressively more expensive.</p>
+
+            <h4>Inclusive vs. Exclusive Cache Hierarchies</h4>
+            <p>Different CPU architectures organize their cache hierarchies differently:</p>
+            <ul>
+                <li><strong>Inclusive Caches:</strong> Data in L1 is guaranteed to also exist in L2, and data in L2 exists in L3. When L1 evicts a line, L2 already has a copy, simplifying the operation. This design makes cache coherence easier in multi-core systems (the L3 can track what all cores have), but wastes capacity by storing duplicates. <em>Example: Most Intel processors.</em></li>
+                <li><strong>Exclusive Caches:</strong> Each cache line exists in only one level at a time. A line in L1 is <strong>not</strong> also in L2. This maximizes total effective cache capacity since there's no duplication. However, it complicates coherence protocols and eviction (when L1 evicts, the data must be moved to L2). <em>Example: Some AMD processors.</em></li>
+                <li><strong>Non-Inclusive (NINE):</strong> A middle ground where cache levels don't enforce inclusion but also don't prevent it. Data may or may not be duplicated across levels. <em>Example: Recent AMD Zen architectures.</em></li>
+            </ul>
+            <h4>Replacement Policies</h4>
+            <p>When a set is full, the cache must decide which line to evict. Common policies include:</p>
+            <ul>
+                <li><strong>LRU (Least Recently Used):</strong> Evicts the line that hasn't been accessed in the longest time. Effective but requires tracking access history.</li>
+                <li><strong>Pseudo-LRU:</strong> Approximates LRU with less overhead, commonly used in real hardware.</li>
+                <li><strong>Random:</strong> Simple and fast, but less effective than LRU. Sometimes used in L1 caches where speed is critical.</li>
+            </ul>
+            <p>
+                The replacement policy significantly impacts cache hit rates, especially for workloads with complex access patterns.
+            </p>
+
             <h2>10. Cache Coherency in Multi-Processor Systems: Maintaining a Unified View</h2> <p>In multi-CPU or multi-core systems, each CPU may have its own caches. Ensuring that all see the latest data is critical for correct operation. This is <strong>cache coherency</strong>.</p> <h3>10a. The Challenge</h3> <p>Directly accessing another CPU’s cache is slow. Processors need protocols to synchronize states and maintain a consistent view of memory.</p> <h3>10b. MESI Protocol</h3> <p>The MESI protocol defines four states for each cache line:</p> <ul> <li><strong>Modified (M):</strong> Changed by this CPU, not in memory, exclusive to this cache.</li> <li><strong>Exclusive (E):</strong> Same as memory, exclusive to this cache.</li> <li><strong>Shared (S):</strong> Same as memory, may exist in other CPUs’ caches.</li> <li><strong>Invalid (I):</strong> Data not valid, must be loaded before use.</li> </ul>
             <h3>10c. Maintaining Coherency via Snooping</h3> <p>Processors monitor (snoop) the bus for other CPUs’ memory accesses:</p> <ul> <li><strong>Write Access (Request For Ownership, RFO):</strong> If another CPU wants to write a line you have, you must invalidate your copy. The writing CPU gets exclusive ownership.</li> <li><strong>Read Access:</strong> If another CPU requests a line in Modified state, you send the data and update your state to Shared.</li> </ul>
             <h3>10d. Performance Implications</h3> <p>Bus operations and RFOs are expensive. Frequent writes to the same cache line or CPU migration can cause delays. Minimizing unnecessary coherency traffic is essential for high-performance multi-core software.</p>

@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mat and its Mul</title>
+    <style>
+        @import url('https://unpkg.com/normalize.css');
+
+        * {
+            box-sizing: border-box;
+        }
+
+        :root {
+            color-scheme: light dark;
+        }
+
+        body {
+            background: light-dark(#fff, #000);
+            min-height: 100vh;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 4rem 2rem;
+            margin: 0;
+            font-family: 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        }
+
+        body::before {
+            --size: 45px;
+            --line: color-mix(in hsl, canvasText, transparent 70%);
+            content: '';
+            height: 100vh;
+            width: 100vw;
+            position: fixed;
+            background: 
+                linear-gradient(90deg, var(--line) 1px, transparent 1px var(--size)) 50% 50% / var(--size) var(--size),
+                linear-gradient(var(--line) 1px, transparent 1px var(--size)) 50% 50% / var(--size) var(--size);
+            mask: linear-gradient(-20deg, transparent 50%, white);
+            top: 0;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .back-link {
+            position: fixed;
+            top: 2rem;
+            left: 2rem;
+            color: brown;
+            text-decoration: none;
+            font-family: monospace;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .back-link:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
+
+        article {
+            max-width: 74ch;
+            width: 100%;
+        }
+
+        .blog-header {
+            margin-bottom: 3rem;
+        }
+
+        h1 {
+            font-size: clamp(2rem, 5vw, 3rem);
+            margin: 0 0 0.5rem 0;
+            line-height: 1.2;
+        }
+
+        .date {
+            font-family: monospace;
+            font-size: 0.875rem;
+            opacity: 0.6;
+            margin-bottom: 2rem;
+        }
+
+        .blog-content p {
+            font-family: monospace;
+            line-height: 1.5;
+            margin: 0 0 1.5rem 0;
+            font-size: 0.875rem;
+            opacity: 0.8;
+            font-weight: 400;
+        }
+
+        .blog-content p:first-of-type {
+            font-size: 0.875rem;
+            opacity: 0.8;
+        }
+
+        .blog-content h2 {
+            font-family: 'roboto mono', monospace;
+            font-size: 1.5rem;
+            margin: 2.5rem 0 1rem 0;
+            font-weight: 600;
+        }
+
+        .blog-content h3 {
+            font-family: 'roboto mono', monospace;
+            font-size: 1.25rem;
+            margin: 2rem 0 0.75rem 0;
+            font-weight: 600;
+        }
+
+        .blog-content h4 {
+            font-family: 'roboto mono', monospace;
+            font-size: 1.1rem;
+            margin: 1.5rem 0 0.5rem 0;
+            font-weight: 600;
+        }
+
+        .blog-content code {
+            background: color-mix(in hsl, canvas, canvasText 10%);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .blog-content pre {
+            background: #f5f5f0;
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 1.5rem 0;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.875rem;
+            line-height: 1.5;
+            border: 2px solid #8b7355;
+            color: #666;
+        }
+
+        .blog-content pre code {
+            background: none;
+            padding: 0;
+        }
+
+        .blog-content ul,
+        .blog-content ol {
+            font-family: monospace;
+            font-size: 0.875rem;
+            opacity: 0.8;
+            line-height: 1.6;
+            margin: 1rem 0 1.5rem 0;
+            padding-left: 2rem;
+        }
+
+        .blog-content ul {
+            list-style-type: disc;
+        }
+
+        .blog-content ol {
+            list-style-type: decimal;
+        }
+
+        .blog-content li {
+            margin: 0.5rem 0;
+        }
+
+        .blog-content li ul,
+        .blog-content li ol {
+            margin: 0.5rem 0;
+        }
+
+        .blog-content li ul {
+            list-style-type: circle;
+        }
+
+        .blog-content strong,
+        .blog-content b {
+            font-weight: 600;
+            opacity: 0.9;
+        }
+
+        .blog-content em,
+        .blog-content i {
+            font-style: italic;
+            opacity: 0.85;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 2rem 1rem;
+            }
+
+            .back-link {
+                top: 1rem;
+                left: 1rem;
+            }
+
+            .blog-content ul,
+            .blog-content ol {
+                padding-left: 1.5rem;
+            }
+        }
+        .matrix {
+        display: inline-block;
+        position: relative;
+        margin: 16px;
+        font-family: monospace;
+        font-size: 16px;
+        line-height: 1.6;
+        }
+        .matrix::before,
+        .matrix::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        }
+        .matrix::before {
+        left: -10px;
+        border-left: 2px solid #000;
+        border-top: 2px solid #000;
+        border-bottom: 2px solid #000;
+        border-radius: 4px 0 0 4px;
+        }
+        .matrix::after {
+        right: -10px;
+        border-right: 2px solid #000;
+        border-top: 2px solid #000;
+        border-bottom: 2px solid #000;
+        border-radius: 0 4px 4px 0;
+        }
+        .matrix-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        }
+        .matrix caption {
+        text-align: center;
+        font-weight: 600;
+        margin-bottom: 4px;
+        }
+        .math {
+            font-family: monospace;
+            font-size: 18px;
+            text-align: center;
+            margin: 20px 0;
+            font-weight: 400;
+        }
+        .sum {
+            display: inline-block;
+            vertical-align: middle;
+            text-align: center;
+            line-height: 1;
+            margin: 0 4px;
+            font-size: 25px;
+            font-weight: 500;
+        }
+        .sum sub {
+            display: block;
+            font-size: 12px;
+            position: relative;
+            top: 4px;
+        }
+        .sum sup {
+            display: block;
+            font-size: 12px;
+            position: relative;
+            bottom: 2px;
+        }
+    </style>
+</head>
+<body>
+    <a href="#" class="back-link" onclick="history.back(); return false;">
+        back
+    </a>
+
+    <article>
+        <header class="blog-header">
+            <h1>Matrix and its Multiplication</h1>
+            <div class="date">October 5, 2025</div>
+        </header>
+
+        <div class="blog-content">
+            <p>
+                Before jumping straight to GPUs and AI accelerators, I wanted to really understand how matrix multiplication (MM) works on a CPU. 
+                <br><br>I started with simple, hand-written code and gradually explored tricks like changing loop order, blocking for the cache, and using SIMD instructions. 
+                Along the way, I got a sense of how libraries like OpenBLAS squeeze out every bit of performance — and it’s fascinating to see how much speed you can gain without touching a GPU.
+            </p>
+
+            <h2>1. Hand Calculation: Naive MatMul</h2>
+            <p>
+                Let’s start with two 4×4 matrices and multiply them the usual “by-hand” way, using the <strong>ijk</strong> loop order.<br>
+                <br>That simply means we go through the rows of A (that’s the i loop), then the columns of B (the j loop), and for each pair, we run through all the elements along that row and column (the k loop) to get one number in the result.
+                It’s the most natural way to think about matrix multiplication — row by column — and it’s exactly how we’d do it by hand. We’ll look at how changing this loop order can affect performance in the next section.
+            </p>
+            <div style="display:flex; gap:48px; align-items:flex-start; justify-content:center;">
+                <div>
+                    <div class="matrix">
+                    <div class="matrix-row"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+                    <div class="matrix-row"><span>5</span><span>6</span><span>7</span><span>8</span></div>
+                    <div class="matrix-row"><span>9</span><span>10</span><span>11</span><span>12</span></div>
+                    <div class="matrix-row"><span>13</span><span>14</span><span>15</span><span>16</span></div>
+                    </div>
+                    <div style="text-align:center; font-weight:500; font-family: monospace; color: brown;">Matrix A</div>
+                </div>
+
+                <div>
+                    <div class="matrix">
+                    <div class="matrix-row"><span>16</span><span>15</span><span>14</span><span>13</span></div>
+                    <div class="matrix-row"><span>12</span><span>11</span><span>10</span><span>9</span></div>
+                    <div class="matrix-row"><span>8</span><span>7</span><span>6</span><span>5</span></div>
+                    <div class="matrix-row"><span>4</span><span>3</span><span>2</span><span>1</span></div>
+                    </div>
+                    <div style="text-align:center; font-weight:500; font-family: monospace; color: brown;">Matrix B</div>
+                </div>
+            </div>
+            <p>
+                <br>We want to compute <strong>C = A × B</strong>. Using the <em>ijk</em> order, the formula for each element is:
+            </p>
+            <div class="math">
+                C[i][j] = <span class="sum"><sup>3</sup>Σ<sub>k=0</sub></span>A[i][k] · B[k][j]
+            </div>
+            <p>Each element of C is the sum of products of a row from A and a column from B.</p>
+            
+            <h3>Step-by-Step Calculation</h3>
+            <p>
+                Now, let’s compute each element of <strong>C = A × B</strong> using the <em>ijk</em> order.  
+            For each row <code>i</code> in <strong>A</strong> and column <code>j</code> in <strong>B</strong>,  
+            we sum over all <code>k</code> values (from 0 to 3) as shown in our formula above.</p>
+            <div style="border: 2px solid #8b7355; padding: 20px; background-color: #f5f5f0; margin: 20px 0; border-radius: 8px;">
+                <p><strong>Row 0 of C (i = 0):</strong></p>
+                <p>
+                    C[0][0] = 1×16 + 2×12 + 3×8 + 4×4 = 16 + 24 + 24 + 16 = <strong>80</strong><br>
+                    C[0][1] = 1×15 + 2×11 + 3×7 + 4×3 = 15 + 22 + 21 + 12 = <strong>70</strong><br>
+                    C[0][2] = 1×14 + 2×10 + 3×6 + 4×2 = 14 + 20 + 18 + 8 = <strong>60</strong><br>
+                    C[0][3] = 1×13 + 2×9 + 3×5 + 4×1 = 13 + 18 + 15 + 4 = <strong>50</strong>
+                </p>
+
+                <p><strong>Row 1 of C (i = 1):</strong></p>
+                <p>
+                C[1][0] = 5×16 + 6×12 + 7×8 + 8×4 = 80 + 72 + 56 + 32 = <strong>240</strong><br>
+                C[1][1] = 5×15 + 6×11 + 7×7 + 8×3 = 75 + 66 + 49 + 24 = <strong>214</strong><br>
+                C[1][2] = 5×14 + 6×10 + 7×6 + 8×2 = 70 + 60 + 42 + 16 = <strong>188</strong><br>
+                C[1][3] = 5×13 + 6×9 + 7×5 + 8×1 = 65 + 54 + 35 + 8 = <strong>162</strong>
+                </p>
+
+                <p><strong>Row 2 of C (i = 2):</strong></p>
+                <p>
+                    C[2][0] = 9×16 + 10×12 + 11×8 + 12×4 = 144 + 120 + 88 + 48 = <strong>400</strong><br>
+                    C[2][1] = 9×15 + 10×11 + 11×7 + 12×3 = 135 + 110 + 77 + 36 = <strong>358</strong><br>
+                    C[2][2] = 9×14 + 10×10 + 11×6 + 12×2 = 126 + 100 + 66 + 24 = <strong>316</strong><br>
+                    C[2][3] = 9×13 + 10×9 + 11×5 + 12×1 = 117 + 90 + 55 + 12 = <strong>274</strong>
+                </p>
+
+                <p><strong>Row 3 of C (i = 3):</strong></p>
+                <p>
+                C[3][0] = 13×16 + 14×12 + 15×8 + 16×4 = 208 + 168 + 120 + 64 = <strong>560</strong><br>
+                C[3][1] = 13×15 + 14×11 + 15×7 + 16×3 = 195 + 154 + 105 + 48 = <strong>502</strong><br>
+                C[3][2] = 13×14 + 14×10 + 15×6 + 16×2 = 182 + 140 + 90 + 32 = <strong>444</strong><br>
+                C[3][3] = 13×13 + 14×9 + 15×5 + 16×1 = 169 + 126 + 75 + 16 = <strong>386</strong>
+                </p>
+            </div>
+            <p>
+                After computing all rows, we get our final result matrix <strong>C</strong> —  
+                the product of <strong>A</strong> and <strong>B</strong> using the naive <em>ijk</em> order.
+            </p>
+            <div style="display:flex; gap:48px; align-items:flex-start; justify-content:center;">
+                <div>
+                    <div class="matrix">
+                    <div class="matrix-row"><span>80</span><span>70</span><span>60</span><span>50</span></div>
+                    <div class="matrix-row"><span>240</span><span>214</span><span>188</span><span>162</span></div>
+                    <div class="matrix-row"><span>400</span><span>358</span><span>316</span><span>274</span></div>
+                    <div class="matrix-row"><span>560</span><span>502</span><span>444</span><span>386</span></div>
+                    </div>
+                    <div style="text-align:center; font-weight:500; font-family: monospace; color: brown;">Result Matrix C</div>
+                </div>
+            </div>
+            <h3>Before We Move on to Loop Ordering Methods,</h3>
+            <h4>Number of Operations</h4>
+            <p>
+                For our 4×4 matrix multiplication, we calculated by hand that each element needs 4 multiplications and 3 additions.
+                Since we have 16 elements in the result matrix:
+            </p>
+            <p>
+                Total multiplications: 4 × 4 × 4 = 64<br>
+                Total additions: 16 × 3 = 48<br>
+                Total operations: 112
+            </p>
+            <p>
+                The formula for any N×N matrix multiplication is 2N³ - N². 
+                As the matrix size grows, operations increase cubically. 
+                An 8×8 matrix needs 896 operations (8× times bigger), 
+                and a 512×512 matrix needs 268 million operations.
+            </p>
+            <h4>Memory Usage</h4>
+            <p>
+                We need to store three 4×4 matrices (A, B, and C), which is 48 total elements. 
+                Memory depends on the data type:
+            </p>
+            <p>
+                fp16 (2 bytes per number): 96 bytes total<br>
+                fp32 (4 bytes per number): 192 bytes total<br>
+                fp64 (8 bytes per number): 384 bytes total
+            </p>
+            <p>
+                The formula is 3 × N² × bytes per element. 
+                Memory grows quadratically with N. A 512×512 matrix multiplication needs 1.5 MB for fp16, or 6 MB for fp64.
+            </p>
+            <p>
+                For 4×4 matrices, everything is tiny and fits in cache easily. 
+                But as N grows, the number of operations (N³) grows much faster than memory (N²), which is why cache optimization becomes critical for larger matrices.
+                <i>(we will come back to this later)</i>
+            </p>
+
+            <h2>2. Loop ordering (ijk vs ikj vs kij)</h2>
+        </div>
+    </article>
+</body>
+</html>
