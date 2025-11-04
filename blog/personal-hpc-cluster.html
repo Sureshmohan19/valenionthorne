@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Building My Own Cloud HPC Setup for AI Research</title>
+    <style>
+        @import url('https://unpkg.com/normalize.css');
+
+        * {
+            box-sizing: border-box;
+        }
+
+        :root {
+            color-scheme: light dark;
+        }
+
+        body {
+            background: light-dark(#fff, #000);
+            min-height: 100vh;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 4rem 2rem;
+            margin: 0;
+            font-family: 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        }
+
+        body::before {
+            --size: 45px;
+            --line: color-mix(in hsl, canvasText, transparent 70%);
+            content: '';
+            height: 100vh;
+            width: 100vw;
+            position: fixed;
+            background: 
+                linear-gradient(90deg, var(--line) 1px, transparent 1px var(--size)) 50% 50% / var(--size) var(--size),
+                linear-gradient(var(--line) 1px, transparent 1px var(--size)) 50% 50% / var(--size) var(--size);
+            mask: linear-gradient(-20deg, transparent 50%, white);
+            top: 0;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .back-link {
+            position: fixed;
+            top: 2rem;
+            left: 2rem;
+            color: brown;
+            text-decoration: none;
+            font-family: monospace;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .back-link:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
+
+        article {
+            max-width: 74ch;
+            width: 100%;
+        }
+
+        .blog-header {
+            margin-bottom: 3rem;
+        }
+
+        h1 {
+            font-size: clamp(2rem, 5vw, 3rem);
+            margin: 0 0 0.5rem 0;
+            line-height: 1.2;
+        }
+
+        .date {
+            font-family: monospace;
+            font-size: 0.875rem;
+            opacity: 0.6;
+            margin-bottom: 2rem;
+        }
+
+        .blog-content p {
+            font-family: monospace;
+            line-height: 1.5;
+            margin: 0 0 1.5rem 0;
+            font-size: 0.875rem;
+            opacity: 0.8;
+            font-weight: 400;
+        }
+
+        .blog-content p:first-of-type {
+            font-size: 0.875rem;
+            opacity: 0.8;
+        }
+
+        .blog-content h2 {
+            font-family: 'roboto mono', monospace;
+            font-size: 1.5rem;
+            margin: 2.5rem 0 1rem 0;
+            font-weight: 600;
+        }
+
+        .blog-content h3 {
+            font-family: 'roboto mono', monospace;
+            font-size: 1.25rem;
+            margin: 2rem 0 0.75rem 0;
+            font-weight: 600;
+        }
+
+        .blog-content h4 {
+            font-family: 'roboto mono', monospace;
+            font-size: 1.1rem;
+            margin: 1.5rem 0 0.5rem 0;
+            font-weight: 600;
+        }
+
+        .blog-content code {
+            background: color-mix(in hsl, canvas, canvasText 10%);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .blog-content pre {
+            background: #f5f5f0;
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 1.5rem 0;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.875rem;
+            line-height: 1.5;
+            border: 2px solid #8b7355;
+            color: #666;
+        }
+
+        .blog-content pre code {
+            background: none;
+            padding: 0;
+        }
+
+        .blog-content ul,
+        .blog-content ol {
+            font-family: monospace;
+            font-size: 0.875rem;
+            opacity: 0.8;
+            line-height: 1.6;
+            margin: 1rem 0 1.5rem 0;
+            padding-left: 2rem;
+        }
+
+        .blog-content ul {
+            list-style-type: disc;
+        }
+
+        .blog-content ol {
+            list-style-type: decimal;
+        }
+
+        .blog-content li {
+            margin: 0.5rem 0;
+        }
+
+        .blog-content li ul,
+        .blog-content li ol {
+            margin: 0.5rem 0;
+        }
+
+        .blog-content li ul {
+            list-style-type: circle;
+        }
+
+        .blog-content strong,
+        .blog-content b {
+            font-weight: 600;
+            opacity: 0.9;
+        }
+
+        .blog-content em,
+        .blog-content i {
+            font-style: italic;
+            opacity: 0.85;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 2rem 1rem;
+            }
+
+            .back-link {
+                top: 1rem;
+                left: 1rem;
+            }
+
+            .blog-content ul,
+            .blog-content ol {
+                padding-left: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="#" class="back-link" onclick="history.back(); return false;">
+        back
+    </a>
+
+    <article>
+        <header class="blog-header">
+            <h1>Building My Own Cloud HPC Setup for AI Research</h1>
+            <div class="date">November 4, 2025</div>
+        </header>
+
+        <div class="blog-content">
+            <p>
+                I'm slowly putting together a personal cloud-based HPC setup to support my AI research journey. 
+                Right now it's simple: a GPU machine from Lambda, a CPU box from DigitalOcean, automatic environment bootstrapping, 
+                and persistent storage via a Git repo so I can spin up fresh instances anytime and keep working.
+            </p>
+            <p>
+                It's not polished yet—no unified interface, no shared filesystem, and only a test environment—but it's my first real step 
+                toward owning my research stack and eventually building my own lightweight scheduling system.
+            </p>
+        </div>
+    </article>
+</body>
+</html>
+

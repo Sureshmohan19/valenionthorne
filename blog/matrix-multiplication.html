@@ -651,12 +651,12 @@
 
             <h2>3. Here Comes the Catch - The Cache in MatMul</h2>
             <p><i><strong>Important:</strong> I hope readers have a basic understanding of CPU caches. 
-                If not, feel free to check out my post about <a href="/blog/cpuanditscache.html">CPU caches</a>. 
+                If not, feel free to check out my post about <a href="/blog/cpu-and-its-cache.html">CPU caches</a>. 
                 It's not mandatory, though — I will try to explain things from the ground up.</i>
             </p>
             <p>CPUs execute instructions using ALUs and FPUs, which constantly need data to work on. 
                 While the main memory can provide it, accessing it directly is slow. 
-                This is where the <strong><a href="/blog/cpuanditscache.html">CPU cache</a></strong> comes in — a small, fast memory located close to the CPU that reduces access time. 
+                This is where the <strong><a href="/blog/cpu-and-its-cache.html">CPU cache</a></strong> comes in — a small, fast memory located close to the CPU that reduces access time. 
                 Cache is much smaller than main memory, with L1 being the fastest and tiniest. For matrix multiplication, where matrices can be large, keeping cache in mind is crucial for writing efficient code.
             </p>
 
