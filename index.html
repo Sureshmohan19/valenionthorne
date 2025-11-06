@@ -23,7 +23,7 @@
             justify-content: center;
             flex-direction: column;
             gap: 1rem;
-            padding: 2rem 0;
+            padding: 4rem 2rem;
             margin: 0;
             font-family: 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;
         }
@@ -57,6 +57,7 @@
             margin: 0;
             line-height: 1.5;
             opacity: 0.8;
+            text-align: left;
         }
 
         body > p:last-of-type {
@@ -64,8 +65,8 @@
         }
 
         @media (max-width: 768px) {
-            body > p {
-                text-align: center;
+            body {
+                padding: 3rem 1rem;
             }
 
             ul {
@@ -133,6 +134,11 @@
         li:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px color-mix(in hsl, canvasText, transparent 85%);
+        }
+
+        li:hover article a {
+            text-decoration: underline;
+            text-underline-offset: 4px;
         }
 
         article {
@@ -235,9 +241,6 @@
         <a href="https://github.com/Sureshmohan19" target="_blank" rel="noopener noreferrer">
             GitHub
         </a>
-        <a href="https://www.lightwavedata.co.uk" target="_blank" rel="noopener noreferrer">
-            Website
-        </a>
         <a href="mailto:mohansuresh333@gmail.com" target="_blank" rel="noopener noreferrer">
             Email
         </a>    
@@ -255,7 +258,7 @@
     <ul>
         <li>
             <article>
-                <h3>Building My Own Cloud HPC Setup for AI Research</h3>
+                <h3>Building My Own Cloud HPC - Part 1</h3>
                 <p>A simple cloud HPC foundation for AI research, using Lambda GPUs and DigitalOcean CPUs with automated setup and persistent state for fast, repeatable compute environments.</p>
                 <a href="blog/personal-hpc-cluster.html">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

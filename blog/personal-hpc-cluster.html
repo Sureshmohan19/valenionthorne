@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Building My Own Cloud HPC Setup for AI Research</title>
+    <title>Building My Own Cloud HPC - Part 1</title>
     <style>
         @import url('https://unpkg.com/normalize.css');
 
@@ -211,19 +211,125 @@
 
     <article>
         <header class="blog-header">
-            <h1>Building My Own Cloud HPC Setup for AI Research</h1>
-            <div class="date">November 4, 2025</div>
+            <h1>Building My Own Cloud HPC - Part 1</h1>
+            <div class="date">November 5, 2025</div>
         </header>
+
+        <img src="https://r2-image-worker.mohansuresh333.workers.dev/src/images/SLP.png" alt="HPC Setup Overview" style="width: 100%; max-width: 100%; height: auto; border-radius: 8px; margin-bottom: 2rem; border: 1px solid color-mix(in hsl, canvas, canvasText 20%);">
 
         <div class="blog-content">
             <p>
-                I'm slowly putting together a personal cloud-based HPC setup to support my AI research journey. 
-                Right now it's simple: a GPU machine from Lambda, a CPU box from DigitalOcean, automatic environment bootstrapping, 
-                and persistent storage via a Git repo so I can spin up fresh instances anytime and keep working.
+                I'm beginning my journey toward becoming an AI researcher, especially in the LLM space. One of the first things I learned is that serious experimentation requires strong compute — good CPUs and high-performance GPUs. Right now, I don't own any external GPU setup. I even considered buying a used 2×RTX 3090 rig, but the cost is still too high for me at this stage.
             </p>
             <p>
-                It's not polished yet—no unified interface, no shared filesystem, and only a test environment—but it's my first real step 
-                toward owning my research stack and eventually building my own lightweight scheduling system.
+                So instead, I decided to build a small, cloud-based HPC setup that I can scale over time. The goal isn't to have the perfect infrastructure on day one, but to start small, learn the workflow, and gradually evolve the system as I grow.
+            </p>
+
+            <h2>Current Setup</h2>
+            <ul>
+                <li><strong>GPU Machine:</strong> Lambda Cloud – currently testing with 1×A100</li>
+                <li><strong>CPU Machine:</strong> DigitalOcean Ubuntu 24.04 VM (2 vCPUs, 8GB RAM, 160GB SSD)</li>
+                <li><strong>Local Machine:</strong> iMac with M3 (for front-end and coding)</li>
+            </ul>
+            <p>
+                Not fancy at all — but enough to get started, experiment, and understand the moving pieces before scaling.
+            </p>
+
+            <h2>CPU Box Setup (DigitalOcean)</h2>
+            <p>
+                For the CPU server, I spun up a DigitalOcean droplet:
+            </p>
+            <ul>
+                <li>Ubuntu 24.04</li>
+                <li>2 vCPUs</li>
+                <li>8GB RAM</li>
+                <li>160GB SSD</li>
+                <li>NYC3 datacenter</li>
+                <li>Cost: ~$48/month (hourly billing, so I power it down when not using it)</li>
+            </ul>
+            <p>
+                I also created a dedicated SSH key for this instance instead of reusing my default key — feels cleaner and safer.
+            </p>
+            <p>
+                Setup took under 5 minutes (most of that time was me deciding between Ubuntu versions, honestly). Everything else was straightforward.
+            </p>
+
+            <h2>GPU Box Setup (Lambda Cloud)</h2>
+            <p>
+                Setting up the Lambda GPU box was similar, just with a few GPU-specific choices:
+            </p>
+            <ul>
+                <li>Selected the 1×A100 instance ($1.29/hour — the cheapest available at that time)</li>
+                <li>Arizona region</li>
+                <li>Ubuntu 22.04 image</li>
+                <li>Skipped disk creation initially (I attach storage separately)</li>
+                <li>Added firewall rules and SSH key</li>
+            </ul>
+            <p>
+                It took slightly longer to provision compared to the DigitalOcean droplet — totally normal for GPU machines — but once it came online, I just grabbed the IP and connected.
+            </p>
+
+            <h2>Connecting to the Machines</h2>
+            <p>
+                To connect to the machines, I'm using basic SSH. Since I created dedicated SSH keys for these servers, I connect like this:
+            </p>
+            <pre><code>ssh -t -i "$KEY" root@"$IP"</code></pre>
+            <p>
+                or for the GPU box (Lambda defaults to <code>ubuntu</code> instead of <code>root</code>):
+            </p>
+            <pre><code>ssh -t -i "$KEY" ubuntu@"$IP"</code></pre>
+            <p>
+                If your local SSH agent already knows the key (for example, if you've added it with <code>ssh-add</code>), then you don't even need to pass <code>-i</code> — you can just do:
+            </p>
+            <pre><code>ssh root@&lt;server-ip&gt;</code></pre>
+            <p>
+                or
+            </p>
+            <pre><code>ssh ubuntu@&lt;server-ip&gt;</code></pre>
+            <p>
+                SSH will automatically match the right key if it's already loaded. Now you are connected to the machine.
+            </p>
+            <h2>Let's Talk About the Persistent Storage Problem</h2>
+            <p>
+                You can skip this section if you plan to keep your machine running all the time (or if you don't care about losing your work when you shut it down).
+            </p>
+            <p>
+                But if you do want to save your progress — code, models, datasets, etc. — even after turning off the machine, then you need persistent storage.
+            </p>
+            <p>
+                Here's the catch:
+            </p>
+            <p>
+                Both the CPU and GPU machines I'm using are ephemeral, meaning their data is deleted once the machine is stopped or terminated — including anything stored on the local instance drive. That's just how most cloud setups work.
+            </p>
+            <p>
+                Obviously, I don't want to lose my work every time I shut down a machine. But I also can't afford to keep these instances running 24/7. So the middle ground is to attach a persistent volume.
+            </p>
+            <p>
+                Most cloud providers, including DigitalOcean and Lambda, make this easy. You can buy a volume (basically a detachable storage drive) and attach it to your instance. This volume remains intact even if you stop or delete the instance. It's also relatively cheap — though not free.
+            </p>
+            <p>
+                For reference, DigitalOcean charges $5 per 50GB, and Lambda Cloud charges $0.20 per GiB per month.
+            </p>
+
+            <h3>The Catch</h3>
+            <p>
+                Volumes are data center–specific. You can only attach a volume to instances created in the same data center.
+            </p>
+            <p>
+                Cross–data center access isn't supported.
+            </p>
+            <p>
+                For example, I created my CPU box on DigitalOcean's New York (NYC3) data center. So I also bought a 50GB volume in the same data center. As long as I keep creating new instances there, I can reattach that same volume — no problem.
+            </p>
+            <p>
+                But things get trickier with the GPU box. GPU availability is unpredictable, and not every data center offers every GPU type. For instance, I rented a 1×A100 GPU machine from Lambda's Arizona data center and created a volume there. If I later want to use a different GPU in another region, I'll need to buy a new volume in that new data center.
+            </p>
+            <p>
+                I'm still exploring whether it's possible to transfer volumes across data centers. If it is, that could simplify things a lot. But even then, it's better to think about building our own portable storage solution, because if I switch cloud providers entirely, moving those provider-specific volumes probably won't be possible.
+            </p>
+            <p>
+                By now, I hope the problem is clear. We will solve this problem in a bit.
             </p>
         </div>
     </article>
